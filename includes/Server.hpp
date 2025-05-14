@@ -23,11 +23,14 @@ class Server
 
 		// Helper methods for socket setup (optional, can be in constructor)
 		bool valid_inputs(int port, const std::string& password);
+		sockaddr_in create_sockaddr_in(int port);
+		pollfd create_pollfd();
 		void setup_listening_socket();
 		void bind_listening_socket();
 		void listen_on_socket();
 
 	public:
+		// Socket get_listening_socket() const;
 		// Constructor: Sets up the server with port and password, creates and binds listening socket
 		Server(int port, const std::string& password);
 		// The main server loop
