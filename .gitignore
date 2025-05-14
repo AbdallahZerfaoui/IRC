@@ -1,4 +1,9 @@
 #Folders
+.vscode
+.DS_Store
 
 #Files
+ircserv
 *.md
+*.o
+*.txt
