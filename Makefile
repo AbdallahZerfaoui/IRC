@@ -36,6 +36,7 @@ $(NAME): $(OBJS)
 
 # Clean rule: remove object files
 clean:
+	@echo "${RED}Cleaning up...${RESET}"
 	rm -f $(OBJS)
 
 # Fclean rule: remove object files and the executable

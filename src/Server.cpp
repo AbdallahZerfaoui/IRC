@@ -1,8 +1,11 @@
 #include "../includes/Server.hpp"
+#include "../includes/Colors.hpp"
 #include <stdexcept>
 #include <iostream>
 #include <cstring> // For strerror
 
+
+bool Server::_signal_received = false;
 
 // Helper functions
 bool Server::valid_inputs(int port, const std::string& password)
@@ -90,7 +93,7 @@ Server::Server(int port, const std::string& password)
 	// listen_pfd.events = POLLIN; // We are interested in read events (new connections)
 	_pollfds.push_back(listen_pfd);
 
-	std::cout << "Server initialized and listening." << std::endl;
+	std::cout << GREEN << "Server initialized and listening." << RESET << std::endl;
 }
 
 // Destructor (basic cleanup, although RAII handles most sockets)
@@ -99,6 +102,44 @@ Server::~Server()
 	// The Socket destructor handles _listening_socket
 	// In later blocks, you'd iterate _clients and _channels here for cleanup
 	std::cout << "Server shutting down." << std::endl;
+}
+
+void Server::handle_signal(int signum)
+{
+	// Handle the signal (e.g., SIGINT, SIGTERM)
+	std::cout << RED << "Signal " << signum << " received. Shutting down server." << RESET << std::endl;
+	_signal_received = true; // Set the flag to indicate a signal was received
+}
+
+/*
+ * This function sets up the handlers for SIGINT (Ctrl+C) and SIGQUIT (Ctrl+\).
+ */
+void Server::setup_signal_handlers()
+{
+	struct sigaction sa;
+	std::memset(&sa, 0, sizeof(sa));
+
+	// Set our handle_signal function as the handler
+	sa.sa_handler = Server::handle_signal;
+
+	sigemptyset(&sa.sa_mask); // Initialize sa_mask to an empty set (no signals blocked)
+
+	sa.sa_flags = 0;
+
+	// Register the handler for SIGINT (Ctrl+C)
+	if (sigaction(SIGINT, &sa, NULL) == -1)
+	{
+		std::cerr << RED << "Error: Could not set up SIGINT handler: " << std::strerror(errno) << RESET << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	// Register the handler for SIGQUIT (Ctrl+\)
+	if (sigaction(SIGQUIT, &sa, NULL) == -1)
+	{
+		std::cerr << RED << "Error: Could not set up SIGQUIT handler: " << std::strerror(errno) << RESET << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	std::cout << GREEN << "Signal handlers for SIGINT and SIGQUIT set up." << RESET << std::endl;
 }
 
 // The main server loop for Block 1
@@ -110,6 +151,9 @@ void Server::run()
 		// Block indefinitely (-1 timeout) waiting for events on file descriptors in _pollfds
 		int num_events = poll(_pollfds.data(), _pollfds.size(), -1); // C++11 data() needed, or &(_pollfds[0]) for C++98
 
+		if (_signal_received)
+			break;
+			
 		if (num_events < 0)
 		{
 			// Handle poll errors, ignoring EINTR which means interrupted by signal
