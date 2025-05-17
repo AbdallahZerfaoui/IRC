@@ -4,6 +4,5 @@
 
 #Files
 ircserv
-*.md
 *.o
 *.txt

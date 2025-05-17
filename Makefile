@@ -46,6 +46,9 @@ fclean: clean
 # Re rule: fclean and then build all
 re: fclean all
 
+success_message:
+	@echo "${RED}	------------------***༺ (${RED}${GREEN}IRC Compiled!${})༻***------------------\n\033[0m"
+
 art:
 	@echo "${GREEN}IIIIIIIIIIRRRRRRRRRRRRRRRRR           CCCCCCCCCCCCC             SSSSSSSSSSSSSSS EEEEEEEEEEEEEEEEEEEEEERRRRRRRRRRRRRRRRR   VVVVVVVV           VVVVVVVVEEEEEEEEEEEEEEEEEEEEEERRRRRRRRRRRRRRRRR   "
 	@echo "I::::::::IR::::::::::::::::R       CCC::::::::::::C           SS:::::::::::::::SE::::::::::::::::::::ER::::::::::::::::R  V::::::V           V::::::VE::::::::::::::::::::ER::::::::::::::::R  "
