@@ -29,6 +29,8 @@ class Server
 		bool valid_inputs(int port, const std::string& password);
 		sockaddr_in create_sockaddr_in(int port);
 		pollfd create_pollfd();
+		void handle_new_connection();
+		void handle_disconnection(int client_fd);
 		void setup_listening_socket();
 		void bind_listening_socket();
 		void listen_on_socket();

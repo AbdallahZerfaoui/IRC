@@ -142,6 +142,46 @@ void Server::setup_signal_handlers()
 	std::cout << GREEN << "Signal handlers for SIGINT and SIGQUIT set up." << RESET << std::endl;
 }
 
+void Server::handle_new_connection()
+{
+	// Accept a new connection
+	int client_fd = accept(_listening_socket.get_fd(), NULL, NULL);
+
+	if (client_fd < 0) 
+	{
+		std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
+		return;
+	}
+	std::cout << "New connection accepted on FD " << client_fd << std::endl;
+
+	// Add the new client socket to the pollfd vector
+	pollfd client_pfd;
+	client_pfd.fd = client_fd;
+	client_pfd.events = POLLIN; // We are interested in read events (client data)
+	client_pfd.revents = 0;     // Initialize revents to 0
+	_pollfds.push_back(client_pfd);
+
+	std::cout << GREEN << "New client added to poll list." << RESET << std::endl;
+}
+
+void Server::handle_disconnection(int client_fd)
+{
+	// Handle disconnection of a client
+	std::cout << "Client on FD " << client_fd << " disconnected." << std::endl;
+
+	// Remove the client socket from the pollfd vector
+	for (auto it = _pollfds.begin(); it != _pollfds.end(); ++it) 
+	{
+		if (it->fd == client_fd) 
+		{
+			close(client_fd); // Close the socket
+			_pollfds.erase(it); // Remove from pollfd vector
+			std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
+			break;
+		}
+	}
+}
+
 // The main server loop for Block 1
 void Server::run() 
 {
@@ -178,13 +218,19 @@ void Server::run()
 			if (_pollfds[0].revents & POLLIN)
 			{
 				// A new connection is ready to be accepted
-				std::cout << "Event on listening socket (FD " << _listening_socket.get_fd() << "): New connection pending." << std::endl;
+				//Block 1 : just print a message
+				// std::cout << "Event on listening socket (FD " << _listening_socket.get_fd() << "): New connection pending." << std::endl;
 				// In Block 2, you will call handle_new_connection() here
+				handle_new_connection();
 				// For Block 1, we just acknowledge it.
 				num_events--; // Decrement counter as we've handled one event
 			}
+			// handle disconnection
+			// In Block 2, you will call handle_disconnection() here
+			else if (_pollfds[0].revents & POLLHUP)
+				handle_disconnection(_listening_socket.get_fd());
 			// Check for errors on listening socket (rare but possible)
-			if (_pollfds[0].revents & (POLLERR | POLLHUP | POLLNVAL))
+			else if (_pollfds[0].revents & (POLLERR | POLLHUP |POLLNVAL))
 			{
 					std::cerr << "Error event on listening socket (FD " << _listening_socket.get_fd() << ")." << std::endl;
 					// Depending on the error, you might want to exit or try to recover

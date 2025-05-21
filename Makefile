@@ -3,6 +3,10 @@ RED = \033[31m
 GREEN = \033[32m
 RESET = \033[0m
 
+# Parameters
+DEFAULT_PORT = 6667
+DEFAULT_PASSWORD = my_password
+
 # Compiler
 CXX = c++
 # CXX = clang++ # Uncomment this line and comment the above if you prefer clang
@@ -24,7 +28,7 @@ SRCS = main.cpp src/Server.cpp src/Socket.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 # Default rule: make all
-all: art $(NAME)
+all: art $(NAME) success_message
 
 # Rule to build the executable
 $(NAME): $(OBJS)
@@ -49,6 +53,10 @@ re: fclean all
 success_message:
 	@echo "${RED}	------------------***༺ (${RED}${GREEN}IRC Compiled!${})༻***------------------\n\033[0m"
 
+start_server: re
+	@echo "${GREEN}Starting server...${RESET}"
+	./$(NAME) ${DEFAULT_PORT} ${DEFAULT_PASSWORD}
+
 art:
 	@echo "${GREEN}IIIIIIIIIIRRRRRRRRRRRRRRRRR           CCCCCCCCCCCCC             SSSSSSSSSSSSSSS EEEEEEEEEEEEEEEEEEEEEERRRRRRRRRRRRRRRRR   VVVVVVVV           VVVVVVVVEEEEEEEEEEEEEEEEEEEEEERRRRRRRRRRRRRRRRR   "
 	@echo "I::::::::IR::::::::::::::::R       CCC::::::::::::C           SS:::::::::::::::SE::::::::::::::::::::ER::::::::::::::::R  V::::::V           V::::::VE::::::::::::::::::::ER::::::::::::::::R  "
@@ -69,4 +77,4 @@ art:
 	@echo "${RED}                                                                                                             by The Greatest Team Ever (2025)                                                  ${RESET}"
 
 # Phony targets (targets that don't represent files)
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re success_message art start_server
