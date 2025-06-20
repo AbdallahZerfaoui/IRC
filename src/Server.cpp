@@ -145,13 +145,23 @@ void Server::setup_signal_handlers()
 void Server::handle_new_connection()
 {
 	// Accept a new connection
-	int client_fd = accept(_listening_socket.get_fd(), NULL, NULL);
+	// int client_fd = accept(_listening_socket.get_fd(), NULL, NULL);
 
-	if (client_fd < 0) 
-	{
-		std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
-		return;
-	}
+	// if (client_fd < 0)
+	// {
+	// 	std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
+	// 	return;
+	// }
+    // ADDED (tobias): Instead of the above we do this:
+    std::unique_ptr<Socket> client_socket = _listening_socket.accept();
+    if (!client_socket)
+    {
+        std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
+        return ;
+    }
+    int client_fd = client_socket->get_fd();
+    _clients.emplace(client_fd, std::move(client_socket));
+
 	std::cout << "New connection accepted on FD " << client_fd << std::endl;
 
 	// Add the new client socket to the pollfd vector
@@ -169,8 +179,11 @@ void Server::handle_disconnection(int client_fd)
 	// Handle disconnection of a client
 	std::cout << "Client on FD " << client_fd << " disconnected." << std::endl;
 
+    //ADDED (tobias): Remove the client from the _clients map
+    _clients.erase(client_fd);
+
 	// Remove the client socket from the pollfd vector
-	for (auto it = _pollfds.begin(); it != _pollfds.end(); ++it) 
+	for (auto it = _pollfds.begin(); it != _pollfds.end(); ++it)
 	{
 		if (it->fd == client_fd) 
 		{
@@ -224,6 +237,13 @@ void Server::run()
 				handle_new_connection();
 				// For Block 1, we just acknowledge it.
 				num_events--; // Decrement counter as we've handled one event
+                
+                // ADDED (tobias): Print all connected clients fds (for debugging)
+                std::cout << "Currently connected clients:" << std::endl;
+                for (const auto& pair : _clients) {
+                    const Client& client = pair.second;
+                    std::cout << "Client FD: " << client.get_fd() << std::endl;
+                }
 			}
 			// handle disconnection
 			// In Block 2, you will call handle_disconnection() here

@@ -27,6 +27,7 @@ int main(int argc, char** argv)
 	}
 
 	std::string password = argv[2];
+    
 	//TODO: should we validate the password??
 	
 	// >>> ADDED FOR SIGNAL HANDLING <<<
