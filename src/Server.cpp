@@ -160,8 +160,12 @@ void Server::handle_new_connection()
         return ;
     }
     int client_fd = client_socket->get_fd();
-    _clients.emplace(client_fd, std::move(client_socket));
 
+	// Create a new Client with the accepted socket and store the client in the clients map
+	// Client(std::move(client_socket)): Creates a temporary Client object that takes ownsership of the socket
+	// _client.emplace(...): Inserts the client in the map and therefore the client is accessible even after the function returns
+	_clients.emplace(client_fd, Client(std::move(client_socket)));
+	std::cout << "Client in map addr: " << &(_clients.at(client_fd)) << std::endl;
 	std::cout << "New connection accepted on FD " << client_fd << std::endl;
 
 	// Add the new client socket to the pollfd vector
@@ -242,7 +246,7 @@ void Server::run()
                 std::cout << "Currently connected clients:" << std::endl;
                 for (const auto& pair : _clients) {
                     const Client& client = pair.second;
-                    std::cout << "Client FD: " << client.get_fd() << std::endl;
+                    std::cout << "Client FD: " << client.get_fd() << " addr: " << &(pair.second) << std::endl;
                 }
 			}
 			// handle disconnection

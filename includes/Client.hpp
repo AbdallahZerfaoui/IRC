@@ -22,8 +22,13 @@ public:
     Client() = delete;
     Client(const Client&) = delete;
     Client& operator=(const Client&) = delete;
+
+	// Move constructor and assignment operator
+	Client(Client&&);
+	Client& operator=(Client&&);
+
     Client(std::unique_ptr<Socket> socket);
-    ~Client() = default;
+    ~Client();
 
     int get_fd() const;
 
