@@ -28,7 +28,7 @@ public:
 	Client& operator=(Client&&);
 
     Client(std::unique_ptr<Socket> socket);
-    ~Client();
+    ~Client() = default;
 
     int get_fd() const;
 

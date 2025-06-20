@@ -9,6 +9,7 @@
 # include <netinet/in.h> // For sockaddr_in
 # include <arpa/inet.h>  // For htons()
 # include <csignal>     // For signal handling
+# include <map>
 # include <unordered_map> // For mapping client file descriptors to Client objects
 # include "Client.hpp"
 

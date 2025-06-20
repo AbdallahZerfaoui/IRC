@@ -16,14 +16,8 @@ Client& Client::operator=(Client&& other)
 // CHANGED (tobias)
 Client::Client(std::unique_ptr<Socket> socket) : _socket(std::move(socket))
 {
-	std::cout << "test\n";
     if (_socket)
-        _socket->set_nonblocking();
-}
-
-Client::~Client()
-{
-	std::cout << "test client dead\n";
+		_socket->set_nonblocking();
 }
 
 int Client::get_fd() const { return _socket->get_fd(); }
