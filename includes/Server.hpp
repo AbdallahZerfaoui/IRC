@@ -26,6 +26,7 @@ class Server
 		std::string _password;
 		std::vector<pollfd> _pollfds; // List of file descriptors poll() should monitor
         std::unordered_map<int, Client> _clients; // Map of client fds to Client objects. For client data like read/write buffers, status, nickname, ...
+		std::unordered_map<int, std::string> _client_buffers; // Map of client fds to their read/write buffers
 		static bool _signal_received; // For signal handling
 
 		
@@ -38,6 +39,7 @@ class Server
 		void setup_listening_socket();
 		void bind_listening_socket();
 		void listen_on_socket();
+		void process_client_data(size_t& index, int client_fd);
 		
 		public:
 		// Socket get_listening_socket() const;

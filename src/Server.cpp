@@ -188,21 +188,50 @@ void Server::handle_disconnection(int i)
 	std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
 }
 
-std::string &get_next_line(int fd)
+void Server::process_client_data(size_t& index, int client_fd)
 {
-	char buffer[1024];
-	static std::map<int, std::string> buffers;
-
-	std::string line;
-	while (1)
+	// std::cout << "\nprocessing data...\n";
+	char buffer[2];
+	ssize_t bytes_read;
+	while ((bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) > 0)
 	{
-		/* code */
-	} 
-	
-	// ssize_t bytes_read = recv(fd, buffer, sizeof(buffer), 0);
-	// if (bytes_read <= 0)
-	// 	return line;
-
+		// std::cout << "Received " << bytes_read << " bytes from client FD " << client_fd << "\n";
+		_client_buffers[client_fd] += std::string(buffer, bytes_read);
+	}
+	// std::cout << "Finished reading data. Bytes_read at the end: " << bytes_read << std::endl;
+	if (bytes_read == 0)
+	{
+		std::cout << "Client disconnected (recv returned 0)" << std::endl;
+		handle_disconnection(index);
+		--index;
+		return ;
+	}
+	else if (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
+	{
+		std::cerr << "recv() failed: " << std::strerror(errno) << std::endl;
+		handle_disconnection(index);
+		--index;
+		return ;
+	}
+	size_t pos;
+	std::vector<std::string> lines;
+	// std::cout << "Received data from client FD " << client_fd << ": " << _client_buffers[client_fd] << std::endl;
+	// for (size_t i = 0; i < _client_buffers[client_fd].size(); i++)
+	// {
+	// 	std::cout << "Buffer[" << i << "]: " << static_cast<int>(_client_buffers[client_fd][i]) << " ";
+	// }
+	// std::cout << std::endl;
+	while ((pos = _client_buffers[client_fd].find('\n')) != std::string::npos)
+	{
+		std::string line = _client_buffers[client_fd].substr(0, pos);
+		_client_buffers[client_fd].erase(0, pos + 1);
+		// std::cout << "Processing line: " << line << std::endl;
+		lines.push_back(line);
+	}
+	for (const std::string& line : lines)
+	{
+		std::cout << "Client sent: " << line << std::endl;
+	}
 }
 
 // The main server loop for Block 1
@@ -216,7 +245,7 @@ void Server::run()
 
 		if (_signal_received)
 			break;
-			
+
 		if (num_events < 0)
 		{
 			// Handle poll errors, ignoring EINTR which means interrupted by signal
@@ -224,7 +253,8 @@ void Server::run()
 				continue; // Signal received, poll again
 			throw std::runtime_error(std::string("Poll failed: ") + std::strerror(errno));
 		}
-		if (num_events == 0) {
+		if (num_events == 0)
+		{
 			// Timeout occurred (shouldn't happen with -1 timeout), poll again
 			continue;
 		}
@@ -238,7 +268,6 @@ void Server::run()
 		// Make sure _pollfds is not empty before accessing _pollfds[0]
 		if (!_pollfds.empty() && _pollfds[0].fd == _listening_socket.get_fd())
 		{
-			std::cout << "num_events " << num_events << " _pollfds.size() " << _pollfds.size() << "\n";
 			if (_pollfds[0].revents & POLLIN)
 			{
 				// A new connection is ready to be accepted
@@ -246,53 +275,42 @@ void Server::run()
 				// In Block 2, you will call handle_new_connection() here
 				handle_new_connection();
 				num_events--; // Decrement counter as we've handled one event
-                
-                // ADDED (tobias): Print all connected clients fds (for debugging)
-                std::cout << "\nCurrently connected clients:" << std::endl;
-                for (const auto& pair : _clients) {
-                    const Client& client = pair.second;
-                    std::cout << "Client FD: " << client.get_fd() << " addr: " << &(pair.second) << std::endl;
-                }
+
+				// ADDED (tobias): Print all connected clients fds (for debugging)
+				// std::cout << "\nCurrently connected clients:" << std::endl;
+				// for (const auto& pair : _clients) {
+				//     const Client& client = pair.second;
+				//     std::cout << "Client FD: " << client.get_fd() << " addr: " << &(pair.second) << std::endl;
+				// }
 				// std::cout << "\nCurrrent _pollfds:" << std::endl;
-                // for (const auto& p : _pollfds) {
-                //     std::cout << "poll FD: " << p.fd << std::endl;
-                // }
+				// for (const auto& p : _pollfds) {
+				//     std::cout << "poll FD: " << p.fd << std::endl;
+				// }
 			}
-			// Entering the loop to check for events on client sockets like sending data, disconnections, errors...
-			for (size_t i = 1; i < _pollfds.size(); ++i)
+		}
+		// Entering the loop to check for events on client sockets like sending data, disconnections, errors...
+		for (size_t i = 1; i < _pollfds.size(); ++i)
+		{
+			if (_pollfds[i].revents & POLLHUP)
 			{
-				if (_pollfds[i].revents & POLLHUP)
-				{
-					// handle disconnection
-					handle_disconnection(i);
-					--i; // Decrement i to stay at the same index after erasing
-					num_events--;
-				}
-				else if (_pollfds[i].revents & POLLIN)
-				{
-					std::string message = nullptr;
-					while (auto line = (get_next_line(_pollfds[i].fd)) != std::string::npos)
-						message += line;
-					if (message.empty())
-					{
-						std::cout << "recv() <= 0 Client disconnected or failure." << std::endl;
-						handle_disconnection(i);
-						--i;
-						num_events--;
-					}
-					else
-					{
-						std::cout << "Received: " << message << std::endl;
-						num_events--;
-					}
-				}
-				else if (_pollfds[i].revents & (POLLERR | POLLNVAL))
-				{
-					// Check for errors on listening socket (rare but possible)
-					std::cerr << "Error event on listening socket (FD " << _listening_socket.get_fd() << ")." << std::endl;
-					// Depending on the error, you might want to exit or try to recover
-					throw std::runtime_error("Fatal error on listening socket.");
-				}
+				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Disconnection detected." << std::endl;
+				// handle disconnection
+				handle_disconnection(i);
+				--i; // Decrement i to stay at the same index after erasing
+				--num_events;
+			}
+			else if (_pollfds[i].revents & POLLIN)
+			{
+				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Data ready to read." << std::endl;
+				process_client_data(i, _pollfds[i].fd);
+				--num_events;
+			}
+			else if (_pollfds[i].revents & (POLLERR | POLLNVAL))
+			{
+				// Check for errors on listening socket (rare but possible)
+				std::cerr << "Error event on listening socket (FD " << _listening_socket.get_fd() << ")." << std::endl;
+				// Depending on the error, you might want to exit or try to recover
+				throw std::runtime_error("Fatal error on listening socket.");
 			}
 		}
 		// If num_events > 0 here, it means other events occurred (on client sockets),
