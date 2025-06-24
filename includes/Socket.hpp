@@ -8,6 +8,7 @@
 # include <stdexcept>    // For std::runtime_error
 # include <string>       // For string in error messages
 # include <cstring>      // For strerror()
+#include <memory>
 
 class Socket
 {
@@ -30,7 +31,7 @@ class Socket
 
 		// void bind(int port);
 		// void listen(int backlog);
-		// Socket* accept(); // Returns a new Socket object for the client (or unique_ptr)
+		std::unique_ptr<Socket> accept() const; // Returns a new Socket object for the client (or unique_ptr)
 		// ssize_t send(const void* buf, size_t len, int flags = 0);
 		// ssize_t recv(void* buf, size_t len, int flags = 0);
 };

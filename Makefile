@@ -11,6 +11,10 @@ DEFAULT_PASSWORD = my_password
 CXX = c++
 # CXX = clang++ # Uncomment this line and comment the above if you prefer clang
 
+HEADER_DIR = ./includes
+SRCS_DIR = ./src
+OBJSDIR = ./objs
+
 # Compiler flags
 # For C++17
 CXXFLAGS = -std=c++17 -Wall -Wextra -Werror -g
@@ -22,26 +26,31 @@ NAME = ircserv
 
 # Source files
 # For Block 1, we have these:
-SRCS = main.cpp src/Server.cpp src/Socket.cpp
+# SRCS = main.cpp src/Server.cpp src/Socket.cpp src/Client.cpp
+SRCS = Server.cpp Socket.cpp Client.cpp
+SRCS := main.cpp $(addprefix $(SRCS_DIR)/, $(SRCS))
 
 # Object files (derived from SRCS)
-OBJS = $(SRCS:.cpp=.o)
+# OBJS = $(SRCS:.cpp=.o)
+OBJS = $(SRCS:%.cpp=$(OBJSDIR)/%.o)
 
 # Default rule: make all
 all: art $(NAME) success_message
 
 # Rule to build the executable
 $(NAME): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
+	$(CXX) $(CXXFLAGS) $(OBJS) -I$(HEADER_DIR) -o $(NAME)
 
 # Rule to compile .cpp files into .o files
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+$(OBJSDIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -I$(HEADER_DIR) -c $< -o $@
 
 # Clean rule: remove object files
 clean:
 	@echo "${RED}Cleaning up...${RESET}"
 	rm -f $(OBJS)
+	rm -rf $(OBJSDIR)
 
 # Fclean rule: remove object files and the executable
 fclean: clean

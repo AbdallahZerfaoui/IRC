@@ -37,15 +37,15 @@ sockaddr_in Server::create_sockaddr_in(int port)
 // 	return _listening_socket;
 // }
 
-pollfd Server::create_pollfd()
-{
-	pollfd listen_pfd;
-	// Socket listening_socket = get_listening_socket(); // Get the listening socket
-	listen_pfd.fd = _listening_socket.get_fd(); // The file descriptor to monitor
-	listen_pfd.events = POLLIN; // POLLIN for read events
-	listen_pfd.revents = 0;     // Initialize revents to 0
-	return listen_pfd;
-}
+// pollfd Server::create_pollfd()
+// {
+// 	pollfd listen_pfd;
+// 	// Socket listening_socket = get_listening_socket(); // Get the listening socket
+// 	listen_pfd.fd = _listening_socket.get_fd(); // The file descriptor to monitor
+// 	listen_pfd.events = POLLIN; // POLLIN for read events
+// 	listen_pfd.revents = 0;     // Initialize revents to 0
+// 	return listen_pfd;
+// }
 
 // Constructor: Sets up the server
 Server::Server(int port, const std::string& password)
@@ -88,11 +88,10 @@ Server::Server(int port, const std::string& password)
 
 	// Add the listening socket to the pollfd vector
 	// For Block 1, this is the only FD we monitor initially
-	pollfd listen_pfd = create_pollfd();
-	// listen_pfd.fd = _listening_socket.get_fd();
+	// listen_pfd.fd = _listening_socket.get_fd(); -> The file descriptor to monitor
 	// listen_pfd.events = POLLIN; // We are interested in read events (new connections)
-	_pollfds.push_back(listen_pfd);
-
+	// Initialize revents to 0
+	_pollfds.push_back({_listening_socket.get_fd(), POLLIN, 0});
 	std::cout << GREEN << "Server initialized and listening." << RESET << std::endl;
 }
 
@@ -145,55 +144,108 @@ void Server::setup_signal_handlers()
 void Server::handle_new_connection()
 {
 	// Accept a new connection
-	int client_fd = accept(_listening_socket.get_fd(), NULL, NULL);
+	// int client_fd = accept(_listening_socket.get_fd(), NULL, NULL);
 
-	if (client_fd < 0) 
-	{
-		std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
-		return;
-	}
+	// if (client_fd < 0)
+	// {
+	// 	std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
+	// 	return;
+	// }
+    // ADDED (tobias): Instead of the above we do this:
+    std::unique_ptr<Socket> client_socket = _listening_socket.accept();
+    if (!client_socket)
+    {
+        std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
+        return ;
+    }
+    int client_fd = client_socket->get_fd();
+
+	// Create a new Client with the accepted socket and store the client in the clients map
+	// Client(std::move(client_socket)): Creates a temporary Client object that takes ownsership of the socket
+	// _client.emplace(...): Inserts the client in the map and therefore the client is accessible even after the function returns
+	_clients.emplace(client_fd, Client(std::move(client_socket)));
 	std::cout << "New connection accepted on FD " << client_fd << std::endl;
 
 	// Add the new client socket to the pollfd vector
-	pollfd client_pfd;
-	client_pfd.fd = client_fd;
-	client_pfd.events = POLLIN; // We are interested in read events (client data)
-	client_pfd.revents = 0;     // Initialize revents to 0
-	_pollfds.push_back(client_pfd);
-
+	// We are interested in read events (client data) -> POLLIN
+	// Initialize revents to 0
+	_pollfds.push_back({client_fd, POLLIN, 0});
 	std::cout << GREEN << "New client added to poll list." << RESET << std::endl;
 }
 
-void Server::handle_disconnection(int client_fd)
+void Server::handle_disconnection(int i)
 {
 	// Handle disconnection of a client
-	std::cout << "Client on FD " << client_fd << " disconnected." << std::endl;
+	std::cout << "Client on FD " << _pollfds[i].fd << " disconnected." << std::endl;
+
+    //ADDED (tobias): Remove the client from the _clients map
+    // _clients.erase(client_fd);
+	_clients.erase(_pollfds[i].fd);
 
 	// Remove the client socket from the pollfd vector
-	for (auto it = _pollfds.begin(); it != _pollfds.end(); ++it) 
+	close(_pollfds[i].fd);
+	_pollfds.erase(_pollfds.begin() + i); // Remove from pollfd vector
+	std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
+}
+
+void Server::process_client_data(size_t& index, int client_fd)
+{
+	// std::cout << "\nprocessing data...\n";
+	char buffer[2];
+	ssize_t bytes_read;
+	while ((bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) > 0)
 	{
-		if (it->fd == client_fd) 
-		{
-			close(client_fd); // Close the socket
-			_pollfds.erase(it); // Remove from pollfd vector
-			std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
-			break;
-		}
+		// std::cout << "Received " << bytes_read << " bytes from client FD " << client_fd << "\n";
+		_client_buffers[client_fd] += std::string(buffer, bytes_read);
+	}
+	// std::cout << "Finished reading data. Bytes_read at the end: " << bytes_read << std::endl;
+	if (bytes_read == 0)
+	{
+		std::cout << "Client disconnected (recv returned 0)" << std::endl;
+		handle_disconnection(index);
+		--index;
+		return ;
+	}
+	else if (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
+	{
+		std::cerr << "recv() failed: " << std::strerror(errno) << std::endl;
+		handle_disconnection(index);
+		--index;
+		return ;
+	}
+	size_t pos;
+	std::vector<std::string> lines;
+	// std::cout << "Received data from client FD " << client_fd << ": " << _client_buffers[client_fd] << std::endl;
+	// for (size_t i = 0; i < _client_buffers[client_fd].size(); i++)
+	// {
+	// 	std::cout << "Buffer[" << i << "]: " << static_cast<int>(_client_buffers[client_fd][i]) << " ";
+	// }
+	// std::cout << std::endl;
+	while ((pos = _client_buffers[client_fd].find('\n')) != std::string::npos)
+	{
+		std::string line = _client_buffers[client_fd].substr(0, pos);
+		_client_buffers[client_fd].erase(0, pos + 1);
+		// std::cout << "Processing line: " << line << std::endl;
+		lines.push_back(line);
+	}
+	for (const std::string& line : lines)
+	{
+		std::cout << "Client sent: " << line << std::endl;
 	}
 }
 
 // The main server loop for Block 1
-void Server::run() 
+void Server::run()
 {
 	std::cout << "Entering server loop..." << std::endl;
-	while (true) 
+	while (true)
 	{
 		// Block indefinitely (-1 timeout) waiting for events on file descriptors in _pollfds
 		int num_events = poll(_pollfds.data(), _pollfds.size(), -1); // C++11 data() needed, or &(_pollfds[0]) for C++98
 
 		if (_signal_received)
 			break;
-			
+
 		if (num_events < 0)
 		{
 			// Handle poll errors, ignoring EINTR which means interrupted by signal
@@ -201,7 +253,8 @@ void Server::run()
 				continue; // Signal received, poll again
 			throw std::runtime_error(std::string("Poll failed: ") + std::strerror(errno));
 		}
-		if (num_events == 0) {
+		if (num_events == 0)
+		{
 			// Timeout occurred (shouldn't happen with -1 timeout), poll again
 			continue;
 		}
@@ -218,23 +271,46 @@ void Server::run()
 			if (_pollfds[0].revents & POLLIN)
 			{
 				// A new connection is ready to be accepted
-				//Block 1 : just print a message
 				// std::cout << "Event on listening socket (FD " << _listening_socket.get_fd() << "): New connection pending." << std::endl;
 				// In Block 2, you will call handle_new_connection() here
 				handle_new_connection();
-				// For Block 1, we just acknowledge it.
 				num_events--; // Decrement counter as we've handled one event
+
+				// ADDED (tobias): Print all connected clients fds (for debugging)
+				// std::cout << "\nCurrently connected clients:" << std::endl;
+				// for (const auto& pair : _clients) {
+				//     const Client& client = pair.second;
+				//     std::cout << "Client FD: " << client.get_fd() << " addr: " << &(pair.second) << std::endl;
+				// }
+				// std::cout << "\nCurrrent _pollfds:" << std::endl;
+				// for (const auto& p : _pollfds) {
+				//     std::cout << "poll FD: " << p.fd << std::endl;
+				// }
 			}
-			// handle disconnection
-			// In Block 2, you will call handle_disconnection() here
-			else if (_pollfds[0].revents & POLLHUP)
-				handle_disconnection(_listening_socket.get_fd());
-			// Check for errors on listening socket (rare but possible)
-			else if (_pollfds[0].revents & (POLLERR | POLLHUP |POLLNVAL))
+		}
+		// Entering the loop to check for events on client sockets like sending data, disconnections, errors...
+		for (size_t i = 1; i < _pollfds.size(); ++i)
+		{
+			if (_pollfds[i].revents & POLLHUP)
 			{
-					std::cerr << "Error event on listening socket (FD " << _listening_socket.get_fd() << ")." << std::endl;
-					// Depending on the error, you might want to exit or try to recover
-					throw std::runtime_error("Fatal error on listening socket.");
+				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Disconnection detected." << std::endl;
+				// handle disconnection
+				handle_disconnection(i);
+				--i; // Decrement i to stay at the same index after erasing
+				--num_events;
+			}
+			else if (_pollfds[i].revents & POLLIN)
+			{
+				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Data ready to read." << std::endl;
+				process_client_data(i, _pollfds[i].fd);
+				--num_events;
+			}
+			else if (_pollfds[i].revents & (POLLERR | POLLNVAL))
+			{
+				// Check for errors on listening socket (rare but possible)
+				std::cerr << "Error event on listening socket (FD " << _listening_socket.get_fd() << ")." << std::endl;
+				// Depending on the error, you might want to exit or try to recover
+				throw std::runtime_error("Fatal error on listening socket.");
 			}
 		}
 		// If num_events > 0 here, it means other events occurred (on client sockets),

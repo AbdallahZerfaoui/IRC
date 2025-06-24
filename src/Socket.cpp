@@ -66,3 +66,15 @@ void Socket::set_nonblocking()
 	}
 	std::cout << "Socket with FD " << _fd << " set to non-blocking." << std::endl;
 }
+
+// CHANGED (tobias)
+std::unique_ptr<Socket> Socket::accept() const
+{
+    int client_fd = ::accept(_fd, NULL, NULL);
+    if (client_fd < 0)
+	{
+		std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
+		return nullptr;
+	}
+    return std::make_unique<Socket>(client_fd);
+}

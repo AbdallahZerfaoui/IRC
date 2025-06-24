@@ -9,6 +9,10 @@
 # include <netinet/in.h> // For sockaddr_in
 # include <arpa/inet.h>  // For htons()
 # include <csignal>     // For signal handling
+# include <map>
+# include <unordered_map> // For mapping client file descriptors to Client objects
+# include "Client.hpp"
+# include "Channel.hpp"
 
 // Constants
 # define DEFAULT_PORT 6667 // Default port for IRC servers
@@ -22,6 +26,9 @@ class Server
 		int _port;
 		std::string _password;
 		std::vector<pollfd> _pollfds; // List of file descriptors poll() should monitor
+        std::unordered_map<int, Client> _clients; // Map of client fds to Client objects. For client data like read/write buffers, status, nickname, ...
+		std::unordered_map<int, std::string> _client_buffers; // Map of client fds to their read/write buffers
+		std::map<std::string, Channel> _channels; // Map of channel names to Channel objects
 		static bool _signal_received; // For signal handling
 
 		
@@ -34,6 +41,7 @@ class Server
 		void setup_listening_socket();
 		void bind_listening_socket();
 		void listen_on_socket();
+		void process_client_data(size_t& index, int client_fd);
 		
 		public:
 		// Socket get_listening_socket() const;

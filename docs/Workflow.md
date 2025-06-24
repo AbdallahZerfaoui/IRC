@@ -43,6 +43,7 @@ Let's break the project into big, functional blocks, with each block culminating
     4.  If so, loop on `accept()` until it returns -1 with `EAGAIN`/`EWOULDBLOCK`. For each new file descriptor returned by `accept()`:
         *   **Crucially:** Use `fcntl(new_fd, F_SETFL, O_NONBLOCK)` to make the *new client socket* non-blocking.
         *   Add this new client file descriptor to your `pollfd` vector, also with `POLLIN` events requested.
+		*	Create a Client object out of the *new client socket-smart pointer* returned by the accept `_listening_socket.accept()` method and store it inside the `_clients` *map of client fds to Client objects*
         *   Print your "Client connected" message including the new file descriptor.
     5.  Inside the `poll` loop, after checking the listening socket, iterate through the *other* `pollfd` entries (the clients). If a client socket's `revents` has `POLLIN` or any error flag (`POLLERR`, `POLLHUP`, `POLLNVAL`):
         *   Print your "Client disconnected" message including the file descriptor.
