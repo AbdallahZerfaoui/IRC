@@ -3,11 +3,25 @@
 #include <stdexcept>
 #include <iostream>
 #include <cstring> // For strerror
+#include <sstream> // For std::istringstream
 
 
 bool Server::_signal_received = false;
 
 // Helper functions
+bool Server::is_duplicate_nickname(const std::string& nickname)
+{
+	// Check if the nickname is already taken by another client
+	for (const auto& client : _clients)
+	{
+		if (client.second.get_nickname() == nickname)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 bool Server::valid_inputs(int port, const std::string& password)
 {
 	if (port <= 0 || port > MAX_PORT_NBR) {
@@ -20,6 +34,7 @@ bool Server::valid_inputs(int port, const std::string& password)
 	}
 	return true;
 }
+
 // a helper function that generate a sockaddr_in structure, fill it and returns it
 sockaddr_in Server::create_sockaddr_in(int port)
 {
@@ -170,23 +185,147 @@ void Server::handle_new_connection()
 	// We are interested in read events (client data) -> POLLIN
 	// Initialize revents to 0
 	_pollfds.push_back({client_fd, POLLIN, 0});
+	send(client_fd, "Welcome to the server!\n", 24, 0);
 	std::cout << GREEN << "New client added to poll list." << RESET << std::endl;
 }
 
-void Server::handle_disconnection(int i)
+void Server::handle_disconnection(size_t& index)
 {
 	// Handle disconnection of a client
-	std::cout << "Client on FD " << _pollfds[i].fd << " disconnected." << std::endl;
+	std::cout << "Client on FD " << _pollfds[index].fd << " disconnected." << std::endl;
 
     //ADDED (tobias): Remove the client from the _clients map
     // _clients.erase(client_fd);
-	_clients.erase(_pollfds[i].fd);
+	_clients.erase(_pollfds[index].fd);
 
 	// Remove the client socket from the pollfd vector
-	close(_pollfds[i].fd);
-	_pollfds.erase(_pollfds.begin() + i); // Remove from pollfd vector
+	close(_pollfds[index].fd);
+	_pollfds.erase(_pollfds.begin() + index); // Remove from pollfd vector
+	--index;
 	std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
 }
+
+// void Server::handle_authentication(size_t &index, int client_fd, const std::vector<std::string>& lines)
+// {
+// 	std::cout << "Handling authentication for client FD " << client_fd << std::endl;
+
+// 	for (auto &line : lines)
+// 	{
+// 		// std::istringstream ss(line);
+// 		// std::string command;
+// 		// ss >> command;
+// 		// if (command.empty())
+// 		// {
+// 		// 	std::cerr << RED << "Received empty line from client FD " << client_fd << ". Ignoring." << RESET << std::endl;
+// 		// 	continue;
+// 		// }
+// 		// switch (command) {
+// 		// 	case "PASS":
+// 		// 		parse_pass(line, client_fd);
+// 		// 		break;
+// 		// 	case "NICK":
+// 		// 		parse_nick(line, client_fd);
+// 		// 		break;
+// 		// 	case "USER":
+// 		// 		parse_user(line, client_fd);
+// 		// 		break;
+// 		// 	default:
+// 		// 		std::string error_msg = std::string(RED) + "ERROR: Unrecogniced command\n" + RESET;
+// 		// 		send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 		// 		handle_disconnection(index);
+// 		// 		return ;
+// 		// }
+// 		std::string command;
+// 		size_t i = line.find_first_not_of(" \n\r\v\t\f");
+// 		size_t j = line.find_first_not_of(" \n\r\v\t\f", i);
+// 		command = line.substr(i, j - i);
+// 		if (strcmp(command.c_str(), "PASS") == 0)
+// 		{
+// 			if (!_clients[client_fd].get_passed_pass())
+// 			{
+// 				std::string pass = line.substr(j);
+// 				if (pass == _password)
+// 				{
+// 					_clients[client_fd].set_passed_pass(pass);
+// 					std::cout << GREEN << "Client FD " << client_fd << " passed authentication with PASS command.\n" << RESET;
+// 				}
+// 				else
+// 				{
+// 					std::cerr << RED << "Client FD " << client_fd << " failed authentication with PASS command.\n" << RESET;
+// 					std::string error_msg = std::string(RED) + "ERROR: Invalid password\n" + RESET;
+// 					send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 					handle_disconnection(index);
+// 					return ;
+// 				}
+// 			}
+// 			else
+// 			{
+// 				std::cerr << RED << "Client FD " << client_fd << " already passed authentication with PASS command.\n" << RESET;
+// 				std::string error_msg = std::string(RED) + "ERROR: Already authenticated with PASS\n" + RESET;
+// 				send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 				handle_disconnection(index);
+// 				return ;
+// 			}
+// 		}
+// 		else if (strcmp(command.c_str(), "NICK") == 0)
+// 		{
+// 			if (!_clients[client_fd].get_passed_nick())
+// 			{
+// 				std::string nick = line.substr(j);
+// 				if (is_duplicate_nickname(nick) || nick.find_first_of(" \n\r\v\t\f") != std::string::npos)
+// 				{
+// 					std::cerr << RED << "Client FD " << client_fd << " failed authentication with NICK command.\n" << RESET;
+// 					std::string error_msg = std::string(RED) + "ERROR: Invalid nickname or a duplicate. Try it with another nickname\n" + RESET;
+// 					send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 					continue ;
+// 				}
+// 				_clients[client_fd].set_passed_nick(nick);
+// 				std::cout << GREEN << "Client FD " << client_fd << " passed authentication with NICK command.\n" << RESET;
+// 			}
+// 			else
+// 			{
+// 				std::cerr << RED << "Client FD " << client_fd << " already passed authentication with NICK command.\n" << RESET;
+// 				std::string error_msg = std::string(RED) + "ERROR: Already authenticated with NICK\n" + RESET;
+// 				send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 			}
+// 		}
+// 		else if (strcmp(command.c_str(), "USER") == 0)
+// 		{
+// 			if (!_clients[client_fd].get_passed_user())
+// 			{
+// 				std::string user = line.substr(j);
+// 				std::istringstream iss(user);
+// 				std::string username, hostname, servername, realname;
+// 				iss >> username >> hostname >> servername >> realname;
+// 				if (realname.empty() || realname[0] != ':')
+// 				{
+// 					std::cerr << RED << "Client FD " << client_fd << " failed authentication with USER command.\n" << RESET;
+// 					std::string error_msg = std::string(RED) + "ERROR: Invalid username. Try it with another one\n" + RESET;
+// 					send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 					continue ;
+// 				}
+// 				_clients[client_fd].set_passed_user(username);
+// 				_clients[client_fd].set_passed_realname(realname.substr(1));
+// 				std::cout << GREEN << "Client FD " << client_fd << " passed authentication with NICK command.\n" << RESET;
+// 			}
+// 			else
+// 			{
+// 				std::cerr << RED << "Client FD " << client_fd << " already passed authentication with USER command.\n" << RESET;
+// 				std::string error_msg = std::string(RED) + "ERROR: Already authenticated with USER\n" + RESET;
+// 				send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 			}
+// 		}
+// 	}
+// 	if (_clients[client_fd].get_passed_pass() &&
+// 		_clients[client_fd].get_passed_nick() &&
+// 		_clients[client_fd].get_passed_user())
+// 	{
+// 		_clients[client_fd].set_authenticated();
+// 		std::cout << GREEN << "Client FD " << client_fd << " successfully authenticated." << RESET << std::endl;
+// 		std::string error_msg = std::string(GREEN) + "Welcome to the server, " + _clients[client_fd].get_nickname() + "!\n" + RESET;
+// 		send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 	}
+// }
 
 void Server::process_client_data(size_t& index, int client_fd)
 {
@@ -203,14 +342,12 @@ void Server::process_client_data(size_t& index, int client_fd)
 	{
 		std::cout << "Client disconnected (recv returned 0)" << std::endl;
 		handle_disconnection(index);
-		--index;
 		return ;
 	}
 	else if (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
 	{
 		std::cerr << "recv() failed: " << std::strerror(errno) << std::endl;
 		handle_disconnection(index);
-		--index;
 		return ;
 	}
 	size_t pos;
@@ -228,10 +365,20 @@ void Server::process_client_data(size_t& index, int client_fd)
 		// std::cout << "Processing line: " << line << std::endl;
 		lines.push_back(line);
 	}
+	// If there are no complete lines => just return
+	if (lines.empty())
+		return ;
 	for (const std::string& line : lines)
 	{
 		std::cout << "Client sent: " << line << std::endl;
 	}
+	// Forward the data to every other client, who joined the channel if the client is ready authenticated
+	// handle authentication. Check if the client sent PASS, NICK, USER commands. If not, send an error message back.
+	// if (!_clients[client_fd].is_authenticated())
+	// {
+	// 	// handle_authentication(index, client_fd, lines);
+	// 	return ;
+	// }
 }
 
 // The main server loop for Block 1
@@ -296,7 +443,6 @@ void Server::run()
 				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Disconnection detected." << std::endl;
 				// handle disconnection
 				handle_disconnection(i);
-				--i; // Decrement i to stay at the same index after erasing
 				--num_events;
 			}
 			else if (_pollfds[i].revents & POLLIN)

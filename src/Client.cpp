@@ -21,3 +21,42 @@ Client::Client(std::unique_ptr<Socket> socket) : _socket(std::move(socket))
 }
 
 int Client::get_fd() const { return _socket->get_fd(); }
+
+bool Client::is_authenticated() const
+{
+	return authenticated;
+}
+
+std::string const &Client::get_nickname() const
+{
+	return _nickname;
+}
+
+void Client::set_passed_pass(std::string const &pass)
+{
+	_password = pass;
+	passed_pass = true;
+}
+
+void Client::set_passed_nick(std::string const &nick)
+{
+	_nickname = nick;
+	passed_nick = true;
+}
+
+void Client::set_passed_user(std::string const &user)
+{
+	_username = user;
+	passed_user = true;
+}
+
+void Client::set_passed_realname(std::string const &realname)
+{
+	_realname = realname;
+	passed_realname = true;
+}
+
+void Client::set_authenticated()
+{
+	authenticated = true;
+}

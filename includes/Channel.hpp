@@ -15,9 +15,10 @@ class Channel
 
 	public:
 		Channel(const std::string& name);
+		~Channel() = default;
 		void add_client(const Client& client);
 		void remove_client(const Client& client);
-		
+		void broadcast_message(const std::string& message, const Client& sender);
 };
 
 #endif
