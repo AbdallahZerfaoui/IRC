@@ -204,6 +204,37 @@ void Server::handle_disconnection(size_t& index)
 	--index;
 	std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
 }
+void parse_pass(std::string line, int client_fd)
+{
+	if (!_clients[client_fd].get_passed_pass())
+// 			{
+// 				std::string pass = line.substr(j);
+// 				if (pass == _password)
+// 				{
+// 					_clients[client_fd].set_passed_pass(pass);
+// 					std::cout << GREEN << "Client FD " << client_fd << " passed authentication with PASS command.\n" << RESET;
+// 				}
+// 				else
+// 				{
+// 					std::cerr << RED << "Client FD " << client_fd << " failed authentication with PASS command.\n" << RESET;
+// 					std::string error_msg = std::string(RED) + "ERROR: Invalid password\n" + RESET;
+// 					send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 					handle_disconnection(index);
+// 					return ;
+// 				}
+// 			}
+// 			else
+// 			{
+// 				std::cerr << RED << "Client FD " << client_fd << " already passed authentication with PASS command.\n" << RESET;
+// 				std::string error_msg = std::string(RED) + "ERROR: Already authenticated with PASS\n" + RESET;
+// 				send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+// 				handle_disconnection(index);
+// 				return ;
+// 			}
+	
+}
+
+void parse_nick(std::string line, int client_fd)
 
 // void Server::handle_authentication(size_t &index, int client_fd, const std::vector<std::string>& lines)
 // {
@@ -236,36 +267,14 @@ void Server::handle_disconnection(size_t& index)
 // 		// 		return ;
 // 		// }
 // 		std::string command;
-// 		size_t i = line.find_first_not_of(" \n\r\v\t\f");
-// 		size_t j = line.find_first_not_of(" \n\r\v\t\f", i);
-// 		command = line.substr(i, j - i);
+// 		// size_t i = line.find_first_not_of(" \n\r\v\t\f");
+// 		// size_t j = line.find_first_not_of(" \n\r\v\t\f", i);
+//              std::istringstream ss(line);
+//              ss >> command;
+// 		// command = line.substr(i, j - i);
 // 		if (strcmp(command.c_str(), "PASS") == 0)
 // 		{
-// 			if (!_clients[client_fd].get_passed_pass())
-// 			{
-// 				std::string pass = line.substr(j);
-// 				if (pass == _password)
-// 				{
-// 					_clients[client_fd].set_passed_pass(pass);
-// 					std::cout << GREEN << "Client FD " << client_fd << " passed authentication with PASS command.\n" << RESET;
-// 				}
-// 				else
-// 				{
-// 					std::cerr << RED << "Client FD " << client_fd << " failed authentication with PASS command.\n" << RESET;
-// 					std::string error_msg = std::string(RED) + "ERROR: Invalid password\n" + RESET;
-// 					send(client_fd, error_msg.c_str(), error_msg.size(), 0);
-// 					handle_disconnection(index);
-// 					return ;
-// 				}
-// 			}
-// 			else
-// 			{
-// 				std::cerr << RED << "Client FD " << client_fd << " already passed authentication with PASS command.\n" << RESET;
-// 				std::string error_msg = std::string(RED) + "ERROR: Already authenticated with PASS\n" + RESET;
-// 				send(client_fd, error_msg.c_str(), error_msg.size(), 0);
-// 				handle_disconnection(index);
-// 				return ;
-// 			}
+//                      parse_pass(line, client_fd);
 // 		}
 // 		else if (strcmp(command.c_str(), "NICK") == 0)
 // 		{
