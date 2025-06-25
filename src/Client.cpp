@@ -60,3 +60,20 @@ void Client::set_authenticated()
 {
 	authenticated = true;
 }
+
+bool Client::get_passed_pass() const
+{
+    return passed_pass;
+}
+bool Client::get_passed_nick() const
+{
+    return passed_nick;
+}
+bool Client::get_passed_user() const
+{
+    return passed_user;
+}
+bool Client::get_passed_realname() const
+{
+    return passed_realname;
+}

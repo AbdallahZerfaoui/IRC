@@ -43,6 +43,11 @@ class Server
 		void handle_authentication(size_t &index, int client_fd, const std::vector<std::string>& lines);
 		void process_client_data(size_t& index, int client_fd);
 		bool is_duplicate_nickname(const std::string& nickname);
+        // Helper methods for authentication
+        int parse_pass(std::string line, int client_fd);
+        int parse_nick(std::string line, int client_fd);
+        int parse_user(std::string line, int client_fd);
+
 		
 		public:
 		// Socket get_listening_socket() const;
