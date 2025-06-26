@@ -31,17 +31,23 @@ class Server
 		std::map<std::string, Channel> _channels; // Map of channel names to Channel objects
 		static bool _signal_received; // For signal handling
 
-		
 		// Helper methods for socket setup (optional, can be in constructor)
 		bool valid_inputs(int port, const std::string& password);
 		sockaddr_in create_sockaddr_in(int port);
 		pollfd create_pollfd();
 		void handle_new_connection();
-		void handle_disconnection(int client_fd);
+		void handle_disconnection(size_t& index);
 		void setup_listening_socket();
 		void bind_listening_socket();
 		void listen_on_socket();
+		void handle_authentication(size_t &index, int client_fd, const std::vector<std::string>& lines);
 		void process_client_data(size_t& index, int client_fd);
+		bool is_duplicate_nickname(const std::string& nickname);
+        // Helper methods for authentication
+        int parse_pass(std::string line, int client_fd);
+        int parse_nick(std::string line, int client_fd);
+        int parse_user(std::string line, int client_fd);
+
 		
 		public:
 		// Socket get_listening_socket() const;
