@@ -27,7 +27,7 @@ NAME = ircserv
 # Source files
 # For Block 1, we have these:
 # SRCS = main.cpp src/Server.cpp src/Socket.cpp src/Client.cpp
-SRCS = Server.cpp Socket.cpp Client.cpp
+SRCS = Server.cpp Socket.cpp Client.cpp Channel.cpp
 SRCS := main.cpp $(addprefix $(SRCS_DIR)/, $(SRCS))
 
 # Object files (derived from SRCS)

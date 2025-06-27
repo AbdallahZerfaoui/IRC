@@ -77,3 +77,49 @@ bool Client::get_passed_realname() const
 {
     return passed_realname;
 }
+
+// Send data to the client
+void Client::send(std::string const &msg)
+{
+    ssize_t bytes_sent = ::send(_socket->get_fd(), msg.c_str(), msg.size(), 0);
+    if (bytes_sent == -1)
+    {
+        std::cerr << "send() failed for client FD " << _socket->get_fd() << ": " << std::strerror(errno) << std::endl;
+        throw std::runtime_error("send() failed");
+    }
+    if (static_cast<size_t>(bytes_sent) < msg.size())
+    {
+        std::cerr << "Warning: Partial send() for client FD " << _socket->get_fd() << std::endl;
+        throw std::runtime_error("Partial send(), incomplete message sent");
+    }
+}
+
+// Write data to the output buffer used for sending data to the server
+void Client::write_output_buffer(std::string const &data)
+{
+	output_buffer += data;
+}
+
+// std::string const &Client::get_read_buffer() const
+// {
+// 	return read_buffer;
+// }
+
+// std::string const &Client::get_write_buffer() const
+// {
+// 	return write_buffer;
+// }
+
+// Extract a line from the output buffer
+std::string Client::extract_output_line()
+{
+	size_t pos = output_buffer.find('\n');
+	if (pos == std::string::npos)
+		return "";
+
+	std::string line = output_buffer.substr(0, pos);
+	output_buffer.erase(0, pos + 1);
+	if (!line.empty() && line.back() == '\r')
+		line.pop_back();
+	return line;
+}

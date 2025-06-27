@@ -20,8 +20,10 @@ class Client
 {
 private:
     std::unique_ptr<Socket> _socket;
-    std::string read_buffer = "";
-    std::string write_buffer = "";
+	std::string input_buffer = ""; // When the server sends data to the client, it is stored here
+    std::string output_buffer = ""; // When the client sends data to the server, it is stored here
+
+	// Authentication data
 	std::string _nickname = ""; // from NICK
 	std::string _username = ""; // from USER
 	std::string _realname = "";  // from USER after ':'
@@ -45,15 +47,13 @@ public:
     ~Client() = default;
 
     int get_fd() const;
-
-    void read_data();
-    void write_data();
     void close();
 	bool get_passed_pass() const;
 	bool get_passed_nick() const;
 	bool get_passed_user() const;
 	bool get_passed_realname() const;
 
+	std::string const &get_nickname() const;
 	void set_passed_pass(std::string const &pass);
 	void set_passed_nick(std::string const &nick);
 	void set_passed_user(std::string const &user);
@@ -62,7 +62,12 @@ public:
 	bool is_authenticated() const;
 	void set_authenticated();
 
-	std::string const &get_nickname() const;
+	// std::string const &get_read_buffer() const;
+	// std::string const &get_write_buffer() const;
+
+	void send(std::string const &msg); // Append data to the input_buffer to send to the client
+	void write_output_buffer(std::string const &data); // Append data to the output_buffer to send to the server
+	std::string extract_output_line();
 };
 
 #endif
