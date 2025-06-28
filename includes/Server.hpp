@@ -13,6 +13,11 @@
 # include <unordered_map> // For mapping client file descriptors to Client objects
 # include "Client.hpp"
 # include "Channel.hpp"
+#include "../includes/Server.hpp"
+#include "../includes/Colors.hpp"
+#include <stdexcept>
+#include <cstring> // For strerror
+#include <sstream> // For std::istringstream
 
 // Constants
 # define DEFAULT_PORT 6667 // Default port for IRC servers
@@ -27,7 +32,6 @@ class Server
 		std::string _password;
 		std::vector<pollfd> _pollfds; // List of file descriptors poll() should monitor
         std::unordered_map<int, Client> _clients; // Map of client fds to Client objects. For client data like read/write buffers, status, nickname, ...
-		std::unordered_map<int, std::string> _client_buffers; // Map of client fds to their read/write buffers
 		std::map<std::string, Channel> _channels; // Map of channel names to Channel objects
 		static bool _signal_received; // For signal handling
 
@@ -47,8 +51,8 @@ class Server
         int parse_pass(std::string line, int client_fd);
         int parse_nick(std::string line, int client_fd);
         int parse_user(std::string line, int client_fd);
+		int handle_client_command(size_t &index, int client_fd, const std::vector<std::string>& lines);
 
-		
 		public:
 		// Socket get_listening_socket() const;
 		// Constructor: Sets up the server with port and password, creates and binds listening socket
