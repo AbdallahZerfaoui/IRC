@@ -1,8 +1,12 @@
 #Folders
 .vscode
 .DS_Store
+scripts/
 
 #Files
 ircserv
 *.o
 *.txt
+git_cmds.txt
+docker-compose.yml
+test_vps_abdallah
