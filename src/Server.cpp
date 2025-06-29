@@ -174,7 +174,7 @@ void Server::handle_new_connection()
 	_pollfds.push_back({client_fd, POLLIN, 0});
 	try
 	{
-		_clients.at(client_fd).send("Welcome to the server Abdallah!!!\r\n");
+		_clients.at(client_fd).send("Welcome to the server Abdallah!!!!\r\n");
 	}
 	catch (const std::exception& e)
 	{
