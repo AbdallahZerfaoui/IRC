@@ -15,32 +15,32 @@ jobs:
 
         steps:
         - name: Deploy to VPS via SSH
-        # We use a popular, well-maintained action for SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-            # Get the secrets from the GitHub repository settings
-            host: ${{ secrets.IRC_VPS_HOST }}
-            username: ${{ secrets.IRC_VPS_USERNAME }}
-            key: ${{ secrets.IRC_VPS_SSH_PRIVATE_KEY }}
-            
-            # The script to run on the VPS
-            script: |
-                # This special variable gets the name of the branch that triggered the workflow
-                # e.g., "main", "dev-abdallah", "feature/new-thing"
-                BRANCH_NAME=${{ github.ref_name }}
+          # We use a popular, well-maintained action for SSH
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+              # Get the secrets from the GitHub repository settings
+              host: ${{ secrets.IRC_VPS_HOST }}
+              username: ${{ secrets.IRC_VPS_USERNAME }}
+              key: ${{ secrets.IRC_VPS_SSH_PRIVATE_KEY }}
+              
+              # The script to run on the VPS
+              script: |
+                  # This special variable gets the name of the branch that triggered the workflow
+                  # e.g., "main", "dev-abdallah", "feature/new-thing"
+                  BRANCH_NAME=${{ github.ref_name }}
 
-                echo "Triggering branch is: $BRANCH_NAME"
+                  echo "Triggering branch is: $BRANCH_NAME"
 
-                # Construct the target directory path based on the branch name
-                TARGET_DIR="~/branches/$BRANCH_NAME"
-                
-                # Check if the corresponding directory exists on the VPS
-                if [ -d "$TARGET_DIR" ]; then
-                echo "--- Directory found. Pulling updates in $TARGET_DIR ---"
-                cd "$TARGET_DIR" && git pull
-                echo "Deployment for branch $BRANCH_NAME complete."
-                else
-                echo "Warning: Directory $TARGET_DIR does not exist on the VPS. Nothing to do."
-                fi
-                
-                echo "Deployment complete!"
+                  # Construct the target directory path based on the branch name
+                  TARGET_DIR="~/branches/$BRANCH_NAME"
+                  
+                  # Check if the corresponding directory exists on the VPS
+                  if [ -d "$TARGET_DIR" ]; then
+                  echo "--- Directory found. Pulling updates in $TARGET_DIR ---"
+                  cd "$TARGET_DIR" && git pull
+                  echo "Deployment for branch $BRANCH_NAME complete."
+                  else
+                  echo "Warning: Directory $TARGET_DIR does not exist on the VPS. Nothing to do."
+                  fi
+                  
+                  echo "Deployment complete!"
