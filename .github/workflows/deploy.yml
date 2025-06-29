@@ -2,7 +2,8 @@ name: Deploy to debian irc dev VPS
 
 on:
   push:
-    branches: [""]
+    branches:
+      - "**" # The "**" is a wildcard for all branches
 
 jobs:
   deploy:
