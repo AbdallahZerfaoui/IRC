@@ -225,10 +225,10 @@ int Server::parse_pass(std::string pass, int client_fd)
     }
     else
     {
-        std::cerr << RED << "Client FD " << client_fd << " already passed authentication with PASS command.\n" << RESET;
+        std::cerr << RED << "Client FD " << client_fd << ". You may not reregister.\n" << RESET;
 		try
 		{
-			_clients.at(client_fd).send(std::string(RED) + "ERROR: Already authenticated with PASS\r\n" + RESET);
+			_clients.at(client_fd).send(std::string(RED) + "ERROR: You may not reregister\r\n" + RESET);
 		}
 		catch (const std::exception& e)
 		{
@@ -241,37 +241,23 @@ int Server::parse_pass(std::string pass, int client_fd)
 
 int Server::parse_nick(std::string nick, int client_fd)
 {
-    if (!_clients.at(client_fd).get_passed_nick())
+    if (is_duplicate_nickname(nick)
+		|| nick.find_first_of(" \n\r\v\t\f") != std::string::npos
+		|| !std::all_of(nick.begin(), nick.end(), [](unsigned char c){ return std::isalnum(c); }))
     {
-        if (is_duplicate_nickname(nick) || nick.find_first_of(" \n\r\v\t\f") != std::string::npos)
-        {
-            std::cerr << RED << "Client FD " << client_fd << " failed authentication with NICK command.\n" << RESET;
-			try
-			{
-				_clients.at(client_fd).send(std::string(RED) + "ERROR: Invalid nickname or a duplicate. Try it with another nickname\r\n" + RESET);
-			}
-			catch (const std::exception& e)
-			{
-				std::cerr << "Error sending message: " << e.what() << std::endl;
-			}
-            return -1;
-        }
-        _clients.at(client_fd).set_passed_nick(nick);
-        std::cout << GREEN << "Client FD " << client_fd << " passed authentication with NICK command.\n" << RESET;
-    }
-    else
-    {
-        std::cerr << RED << "Client FD " << client_fd << " already passed authentication with NICK command.\n" << RESET;
+        std::cerr << RED << "Client FD " << client_fd << " failed authentication with NICK command.\n" << RESET;
 		try
 		{
-			_clients.at(client_fd).send(std::string(RED) + "ERROR: Already authenticated with NICK\r\n" + RESET);
+			_clients.at(client_fd).send(std::string(RED) + "ERROR: Invalid nickname or a duplicate. Try it with another nickname\r\n" + RESET);
 		}
 		catch (const std::exception& e)
 		{
 			std::cerr << "Error sending message: " << e.what() << std::endl;
 		}
-        return -1;
+		return -1;
     }
+    _clients.at(client_fd).set_passed_nick(nick);
+    std::cout << GREEN << "Client FD " << client_fd << " set nickname to " << nick << ".\n" << RESET;
     return (1);
 }
 
@@ -283,7 +269,13 @@ int Server::parse_user(std::string user, int client_fd)
         std::string username, hostname, servername, real;
         iss >> username >> hostname >> servername;
         std::getline(iss >> std::ws, real);
-        if (real.empty() || real[0] != ':' || hostname != "0" || servername != "*")
+        if (real.empty()
+			|| real[0] != ':'
+			|| hostname != "0"
+			|| servername != "*"
+			|| username.empty()
+			|| username.find_first_of(" \n\r\v\t\f") != std::string::npos
+			|| !std::all_of(username.begin(), username.end(), [](unsigned char c){ return std::isalnum(c); }))
         {
             std::cerr << RED << "Client FD " << client_fd << " failed authentication with USER command.\n" << RESET;
 			try
@@ -298,14 +290,14 @@ int Server::parse_user(std::string user, int client_fd)
         }
         _clients.at(client_fd).set_passed_user(username);
         _clients.at(client_fd).set_passed_realname(real.substr(1));
-        std::cout << GREEN << "Client FD " << client_fd << " passed authentication with NICK command.\n" << RESET;
+        std::cout << GREEN << "Client FD " << client_fd << " set user to " << username << " with real name: " << real.substr(1) << ".\n" << RESET;
     }
     else
     {
-        std::cerr << RED << "Client FD " << client_fd << " already passed authentication with USER command.\n" << RESET;
+        std::cerr << RED << "Client FD " << client_fd << ". You may not reregister.\n" << RESET;
 		try
 		{
-			_clients.at(client_fd).send(std::string(RED) + "ERROR: Already authenticated with USER\r\n" + RESET);
+			_clients.at(client_fd).send(std::string(RED) + "ERROR: You may not reregister\n" + RESET);
 		}
 		catch (const std::exception& e)
 		{
@@ -373,6 +365,16 @@ void Server::handle_authentication(size_t &index, int client_fd, const std::vect
 		try
 		{
 			_clients.at(client_fd).send(std::string(GREEN) + "Welcome to the server, " + _clients.at(client_fd).get_nickname() + "!\r\n" + RESET);
+			_clients.at(client_fd).send(
+				std::string(BLUE) +
+				"Use Commands:\n" +
+				RESET +
+				"JOIN <#channel_name> (to join a channel),\n" +
+				"PART <#channel_name> (to leave a channel),\n" +
+				"PRIVMSG <#channel_name or nickname> <message> (to send a message to a channel),\n" +
+				"NICK <nickname> (to change your nickname),\n" +
+				"USER <username> 0 * :real-name (to set your username and real name),\n" +
+				"QUIT (to disconnect from the server).\r\n");
 		}
 		catch (const std::exception& e)
 		{
@@ -413,10 +415,6 @@ void Server::process_client_data(size_t& index, int client_fd)
 	// If there are no complete lines => just return
 	if (lines.empty())
 		return ;
-	for (const std::string& line : lines)
-	{
-		std::cout << "Client sent: " << line << std::endl;
-	}
 	// handle authentication. Check if the client sent PASS, NICK, USER commands. If not, send an error message back.
 	if (!_clients.at(client_fd).is_authenticated())
 	{
@@ -483,11 +481,138 @@ int Server::handle_client_command(size_t &index, int client_fd, const std::vecto
 		}
 		else if (command == "PART")
 		{
-
+			// Client wants to leave a channel.
+			std::string channel_name;
+			std::getline(ss >> std::ws, channel_name);
+			if (channel_name.empty() || channel_name.size() < 2 || channel_name[0] != '#')
+			{
+				std::cerr << RED << "Client FD " << client_fd << " sent an invalid PART command: " << channel_name << RESET << std::endl;
+				try
+				{
+					_clients.at(client_fd).send(std::string(RED) + "ERROR: Invalid channel name. Use #channel_name.\r\n" + RESET);
+				}
+				catch (const std::exception& e)
+				{
+					std::cerr << "Error sending message: " << e.what() << std::endl;
+				}
+				continue;
+			}
+			channel_name.erase(0, 1);
+			auto it = _channels.find(channel_name);
+			if (it == _channels.end())
+			{
+				std::cerr << RED << "Client FD " << client_fd << " tried to PART from a non-existing channel: " << channel_name << RESET << std::endl;
+				try
+				{
+					_clients.at(client_fd).send(std::string(RED) + "ERROR: You are not in this channel.\r\n" + RESET);
+				}
+				catch (const std::exception& e)
+				{
+					std::cerr << "Error sending message: " << e.what() << std::endl;
+				}
+				continue;
+			}
+			if (!_channels.at(channel_name).remove_client(client_fd))
+			{
+				std::cerr << RED << "Client FD " << client_fd << " tried to PART from a channel they are not in: " << channel_name << RESET << std::endl;
+				try
+				{
+					_clients.at(client_fd).send(std::string(RED) + "ERROR: You are not in this channel.\r\n" + RESET);
+				}
+				catch (const std::exception& e)
+				{
+					std::cerr << "Error sending message: " << e.what() << std::endl;
+					return -1;
+				}
+				continue;
+			}
+			std::string message = "Client FD " + std::to_string(client_fd) + " has left the channel: " + channel_name + "\r\n";
+			std::cout << GREEN << message << RESET << std::endl;
+			// Notify other clients in the channel (forward a message to all other clients in the channel)
+			_channels.at(channel_name).broadcast_message(message, client_fd);
+			try
+			{
+			    _clients.at(client_fd).send(std::string(GREEN) + "You have left the channel: " + channel_name + "\r\n" + RESET);
+			}
+			catch (const std::exception& e)
+			{
+				std::cerr << "Error sending message: " << e.what() << std::endl;
+				return -1;
+			}
 		}
 		else if (command == "PRIVMSG")
 		{
-
+			// Client wants to send a private message to a channel or a user.
+			std::string target, message;
+			std::getline(ss >> std::ws, target, ' ');
+			std::getline(ss >> std::ws, message);
+			if (target.empty() || message.empty())
+			{
+				std::cerr << RED << "Client FD " << client_fd << " sent an invalid PRIVMSG command: " << line << RESET << std::endl;
+				try
+				{
+					_clients.at(client_fd).send(std::string(RED) + "ERROR: Invalid PRIVMSG command format. Use PRIVMSG <#channel_name or nickname> <message>\r\n" + RESET);
+				}
+				catch (const std::exception& e)
+				{
+					std::cerr << "Error sending message: " << e.what() << std::endl;
+				}
+				continue;
+			}
+			if (target[0] == '#')
+			{
+				// Target is a channel
+				target.erase(0, 1);
+				auto it = _channels.find(target);
+				if (it == _channels.end())
+				{
+					std::cerr << RED << "Client FD " << client_fd << " tried to PRIVMSG to a non-existing channel: " << target << RESET << std::endl;
+					try
+					{
+						_clients.at(client_fd).send(std::string(RED) + "ERROR: Channel does not exist.\r\n" + RESET);
+					}
+					catch (const std::exception& e)
+					{
+						std::cerr << "Error sending message: " << e.what() << std::endl;
+					}
+					continue;
+				}
+				it->second.broadcast_message(message, client_fd);
+			}
+			else
+			{
+				// Target is a user
+				bool found = false;
+				for (auto& client : _clients)
+				{
+					if (client.second.get_nickname() == target)
+					{
+						try
+						{
+							client.second.send(std::string(GREEN) + "PRIVMSG from FD " + std::to_string(client_fd) + ": " + message + "\r\n" + RESET);
+						}
+						catch (const std::exception& e)
+						{
+							std::cerr << "Error sending message: " << e.what() << std::endl;
+							continue;
+						}
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+				{
+					std::cerr << RED << "Client FD " << client_fd << " tried to PRIVMSG to a non-existing nickname: " << target << RESET << std::endl;
+					try
+					{
+						_clients.at(client_fd).send(std::string(RED) + "ERROR: User does not exist.\r\n" + RESET);
+					}
+					catch (const std::exception& e)
+					{
+						std::cerr << "Error sending message: " << e.what() << std::endl;
+					}
+				}
+			}
 		}
 		else if (command == "QUIT")
 		{
@@ -594,6 +719,18 @@ void Server::run()
 			else if (_pollfds[i].revents & POLLIN)
 			{
 				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Data ready to read." << std::endl;
+				if (!_clients.at(_pollfds[i].fd).is_authenticated())
+				{
+					try
+					{
+						_clients.at(_pollfds[i].fd).send(std::string(YELLOW) + "Your're not authenticated yet. Use PASS <password>, NICK <nickname> or USER <username 0 * :real-name>\r\n" + RESET);
+					}
+					catch (const std::exception& e)
+					{
+						std::cerr << "Error sending message: " << e.what() << std::endl;
+						continue;
+					}
+				}
 				process_client_data(i, _pollfds[i].fd);
 				--num_events;
 			}

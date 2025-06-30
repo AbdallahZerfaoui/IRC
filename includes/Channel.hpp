@@ -27,7 +27,7 @@ class Channel
 
 		std::set<int> get_clients() const;
 		void add_client(int client_fd);
-		void remove_client(int client_fd);
+		size_t remove_client(int client_fd);
 		void broadcast_message(const std::string& message, int sender_fd) const;
 };
 
