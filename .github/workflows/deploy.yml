@@ -1,46 +1,46 @@
-# .github/workflows/deploy.yml
-
 name: Deploy to debian irc dev VPS
 
-# This action will trigger on every push to any branch
 on:
-    push:
-        branches:
-            - "**" # The "**" is a wildcard for all branches
+  push:
+    branches:
+      - "**" # The "**" is a wildcard for all branches
 
 jobs:
-    deploy:
-        name: Deploy
-        runs-on: ubuntu-latest  # Use the latest Ubuntu runner
-
-        steps:
-        - name: Deploy to VPS via SSH
-          # We use a popular, well-maintained action for SSH
-          uses: appleboy/ssh-action@v1.0.3
-          with:
-              # Get the secrets from the GitHub repository settings
-              host: ${{ secrets.IRC_VPS_HOST }}
-              username: ${{ secrets.IRC_VPS_USERNAME }}
-              key: ${{ secrets.IRC_VPS_SSH_PRIVATE_KEY }}
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.IRC_VPS_HOST }}
+          username: ${{ secrets.IRC_VPS_USERNAME }}
+          key: ${{ secrets.IRC_VPS_SSH_PRIVATE_KEY }}
+          script: |
+            BRANCH_NAME=${{ github.ref_name }}
+            SERVICE_NAME="irc-${BRANCH_NAME#dev-}"  # Converts dev-abdallah → irc-abdallah
+            
+            echo "Triggering branch: $BRANCH_NAME → Service: $SERVICE_NAME"
+            
+            TARGET_DIR="$HOME/branches/$BRANCH_NAME"
+            
+            if [ -d "$TARGET_DIR" ]; then
+              echo "--- Updating $TARGET_DIR ---"
+              cd "$TARGET_DIR" && git pull
               
-              # The script to run on the VPS
-              script: |
-                  # This special variable gets the name of the branch that triggered the workflow
-                  # e.g., "main", "dev-abdallah", "feature/new-thing"
-                  BRANCH_NAME=${{ github.ref_name }}
-
-                  echo "Triggering branch is: $BRANCH_NAME"
-
-                  # Construct the target directory path based on the branch name
-                  TARGET_DIR="$HOME/branches/$BRANCH_NAME"
-                  
-                  # Check if the corresponding directory exists on the VPS
-                  if [ -d "$TARGET_DIR" ]; then
-                    echo "--- Directory found. Pulling updates in $TARGET_DIR ---"
-                    cd "$TARGET_DIR" && git pull
-                    echo "Deployment for branch $BRANCH_NAME complete."
-                  else
-                    echo "Warning: Directory $TARGET_DIR does not exist on the VPS. Nothing to do."
-                  fi
-                  
-                  echo "Deployment complete!"
+              echo "--- Rebuilding $SERVICE_NAME ---"
+              cd "$HOME"
+              
+              # 1. Build specific service with cache buster
+              docker compose build --no-cache --build-arg TIMESTAMP=$(date +%s) $SERVICE_NAME
+              
+              # 2. Force recreate only that container
+              docker compose up -d --force-recreate --no-deps $SERVICE_NAME
+              
+              echo "✅ $SERVICE_NAME deployed successfully"
+            else
+              echo "⚠️ Directory $TARGET_DIR not found - skipping"
+            fi
+            
+            echo "--- Cleaning up ---"
+            docker image prune -f
