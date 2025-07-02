@@ -34,6 +34,8 @@ class Server
         std::unordered_map<int, Client> _clients; // Map of client fds to Client objects. For client data like read/write buffers, status, nickname, ...
 		std::map<std::string, Channel> _channels; // Map of channel names to Channel objects
 		static bool _signal_received; // For signal handling
+		typedef std::function<int(Server&, int, std::istringstream&)> CommandHandler;
+		static const std::unordered_map<std::string, CommandHandler> handlers;
 
 		// Helper methods for socket setup (optional, can be in constructor)
 		bool valid_inputs(int port, const std::string& password);
@@ -44,19 +46,21 @@ class Server
 		void setup_listening_socket();
 		void bind_listening_socket();
 		void listen_on_socket();
-		void handle_authentication(size_t &index, int client_fd, const std::vector<std::string>& lines);
+		// void handle_authentication(size_t &index, int client_fd, const std::vector<std::string>& lines);
 		void process_client_data(size_t& index, int client_fd);
 		bool is_duplicate_nickname(const std::string& nickname);
         // Helper methods for authentication
-        int parse_pass(std::string line, int client_fd);
-        int parse_nick(std::string line, int client_fd);
-        int parse_user(std::string line, int client_fd);
 		int handle_client_command(size_t &index, int client_fd, const std::vector<std::string>& lines);
-		int handle_privmsg(int client_fd, std::string &target, std::string const &message);
-		int handle_part(int client_fd, std::string &channel_name);
-		int handle_join(int client_fd, std::string &channel_name);
-		int handle_help(int client_fd);
-		int handle_channels(int client_fd);
+		int parse_pass(int fd, std::istringstream& ss);
+        int parse_nick(int fd, std::istringstream& ss);
+        int parse_user(int fd, std::istringstream& ss);
+
+		int handle_privmsg(int fd, std::istringstream& ss);
+		int handle_part(int fd, std::istringstream& ss);
+		int handle_join(int fd, std::istringstream& ss);
+		int handle_help(int fd, std::istringstream& ss);
+		int handle_channels(int fd, std::istringstream& ss);
+		int handle_quit(int fd, std::istringstream& ss);
 
 		public:
 		// Socket get_listening_socket() const;
