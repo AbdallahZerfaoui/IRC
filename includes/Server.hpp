@@ -52,6 +52,11 @@ class Server
         int parse_nick(std::string line, int client_fd);
         int parse_user(std::string line, int client_fd);
 		int handle_client_command(size_t &index, int client_fd, const std::vector<std::string>& lines);
+		int handle_privmsg(int client_fd, std::string &target, std::string const &message);
+		int handle_part(int client_fd, std::string &channel_name);
+		int handle_join(int client_fd, std::string &channel_name);
+		int handle_help(int client_fd);
+		int handle_channels(int client_fd);
 
 		public:
 		// Socket get_listening_socket() const;

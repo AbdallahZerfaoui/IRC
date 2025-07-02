@@ -6,7 +6,7 @@
 /*   By: tkeil <tkeil@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/24 17:50:46 by tkeil             #+#    #+#             */
-/*   Updated: 2025/06/30 20:33:45 by tkeil            ###   ########.fr       */
+/*   Updated: 2025/07/02 16:47:37 by tkeil            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,9 @@ void Channel::broadcast_message(const std::string& message, int sender_fd) const
 		{
 			try
 			{
-			    _clients_ref.at(member_fd).send("#" + _name + " :" + message);
+				// [#channel1] <bob>: hi everyone => bob from channel1 sends a message to the channel
+				std::string msg = "[#" + _name + "] <" + _clients_ref.at(sender_fd).get_nickname() + ">: " + message;
+			    _clients_ref.at(member_fd).send(msg);
 			}
 			catch (const std::exception& e)
 			{
