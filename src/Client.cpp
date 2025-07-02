@@ -79,8 +79,9 @@ bool Client::get_passed_realname() const
 }
 
 // Send data to the client
-void Client::send(std::string const &msg)
+void Client::send(std::string &msg)
 {
+	msg += "\r\n"; // Ensure the message ends with CRLF
     ssize_t bytes_sent = ::send(_socket->get_fd(), msg.c_str(), msg.size(), 0);
     if (bytes_sent == -1)
     {

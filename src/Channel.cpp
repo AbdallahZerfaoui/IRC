@@ -6,7 +6,7 @@
 /*   By: tkeil <tkeil@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/24 17:50:46 by tkeil             #+#    #+#             */
-/*   Updated: 2025/06/27 19:27:25 by tkeil            ###   ########.fr       */
+/*   Updated: 2025/07/02 16:47:37 by tkeil            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,17 +31,20 @@ void Channel::add_client(int client_fd)
 	}
 }
 
-void Channel::remove_client(int client_fd)
+size_t Channel::remove_client(int client_fd)
 {
 	if (_clients.find(client_fd) != _clients.end())
 	{
-		_clients.erase(client_fd);
+		if (!_clients.erase(client_fd))
+			return (0);
 		std::cout << "Client FD " << client_fd << " removed from channel " << _name << std::endl;
 	}
 	else
 	{
 		std::cerr << "Client FD " << client_fd << " not found in channel " << _name << std::endl;
+		return (0);
 	}
+	return (1);
 }
 
 std::set<int> Channel::get_clients() const
@@ -57,11 +60,13 @@ void Channel::broadcast_message(const std::string& message, int sender_fd) const
 		{
 			try
 			{
-			    _clients_ref.at(member_fd).send(message);
+				// [#channel1] <bob>: hi everyone => bob from channel1 sends a message to the channel
+				std::string msg = "[#" + _name + "] <" + _clients_ref.at(sender_fd).get_nickname() + ">: " + message;
+			    _clients_ref.at(member_fd).send(msg);
 			}
 			catch (const std::exception& e)
 			{
-			    std::cerr << "Failed to send join message to client: " << e.what() << std::endl;
+			    std::cerr << "Failed to broadcast a message to client: " << e.what() << std::endl;
 				return ;
 			}
 		}

@@ -38,9 +38,14 @@ jobs:
                   if [ -d "$TARGET_DIR" ]; then
                     echo "--- Directory found. Pulling updates in $TARGET_DIR ---"
                     cd "$TARGET_DIR" && git pull
+                    cd "$HOME" && docker compose up --build -d --remove-orphans
                     echo "Deployment for branch $BRANCH_NAME complete."
                   else
                     echo "Warning: Directory $TARGET_DIR does not exist on the VPS. Nothing to do."
                   fi
+
+                  # Clean up unused Docker images
+                  echo "Cleaning up unused Docker images..."
+                  docker image prune -f
                   
                   echo "Deployment complete!"
