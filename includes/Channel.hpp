@@ -10,6 +10,8 @@
 # include "Client.hpp"
 #include "../includes/Colors.hpp"
 
+class Server;
+
 class Channel 
 {
 	private:
@@ -29,6 +31,12 @@ class Channel
 		std::set<int> get_members() const;
 		void add_client(int client_fd);
 		size_t remove_client(int client_fd);
+
+		void add_operator(int client_fd);
+		size_t remove_operator(int client_fd);
+
+		bool has_member(int client_fd) const;
+
 		void broadcast_message(const std::string& message, int sender_fd) const;
 };
 

@@ -53,7 +53,7 @@ public:
 	bool get_passed_user() const;
 	bool get_passed_realname() const;
 
-	std::string const &get_nickname() const;
+	std::string const get_nickname() const;
 	void set_passed_pass(std::string const &pass);
 	void set_passed_nick(std::string const &nick);
 	void set_passed_user(std::string const &user);

@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <cstring> // For strerror
 #include <sstream> // For std::istringstream
+# include "ParsedMessage.hpp"
 
 // Constants
 # define DEFAULT_PORT 6667 // Default port for IRC servers
@@ -28,13 +29,14 @@ class Server
 {
 	private:
 		Socket _listening_socket; // The socket that accepts new connections
+		std::string _hostname;
 		int _port;
 		std::string _password;
 		std::vector<pollfd> _pollfds; // List of file descriptors poll() should monitor
         std::unordered_map<int, Client> _clients; // Map of client fds to Client objects. For client data like read/write buffers, status, nickname, ...
 		std::map<std::string, Channel> _channels; // Map of channel names to Channel objects
 		static bool _signal_received; // For signal handling
-		typedef std::function<int(Server&, int, std::istringstream&)> CommandHandler;
+		typedef std::function<int(Server&, int, const ParsedMessage&)> CommandHandler;
 		static const std::unordered_map<std::string, CommandHandler> handlers;
 
 		// Helper methods for socket setup (optional, can be in constructor)
@@ -49,20 +51,23 @@ class Server
 		// void handle_authentication(size_t &index, int client_fd, const std::vector<std::string>& lines);
 		void process_client_data(size_t& index, int client_fd);
 		bool is_duplicate_nickname(const std::string& nickname);
+		void broadcast_to_all(const std::string& message, int sender_fd);
+		int find_fd_by_nickname(std::string const &nickname) const;
+
         // Helper methods for authentication
-		int handle_client_command(size_t &index, int client_fd, const std::vector<std::string>& lines);
-		int parse_pass(int fd, std::istringstream& ss);
-        int parse_nick(int fd, std::istringstream& ss);
-        int parse_user(int fd, std::istringstream& ss);
+		int handle_client_command(size_t &index, int client_fd, const ParsedMessage& parsedmsg);
+		int parse_pass(int fd, const ParsedMessage& msg);
+        int parse_nick(int fd, const ParsedMessage& msg);
+        int parse_user(int fd, const ParsedMessage& msg);
 
-		int handle_privmsg(int fd, std::istringstream& ss);
-		int handle_part(int fd, std::istringstream& ss);
-		int handle_join(int fd, std::istringstream& ss);
-		int handle_help(int fd, std::istringstream& ss);
-		int handle_channels(int fd, std::istringstream& ss);
-		int handle_quit(int fd, std::istringstream& ss);
-
-		public:
+		int handle_privmsg(int fd, const ParsedMessage& msg);
+		int handle_part(int fd, const ParsedMessage& msg);
+		int handle_join(int fd, const ParsedMessage& msg);
+		int handle_help(int fd, const ParsedMessage& msg);
+		int handle_channels(int fd, const ParsedMessage& msg);
+		int handle_quit(int fd, const ParsedMessage& msg);
+		
+	public:
 		// Socket get_listening_socket() const;
 		// Constructor: Sets up the server with port and password, creates and binds listening socket
 		Server(int port, const std::string& password);
@@ -73,6 +78,8 @@ class Server
 		// signal handling methods
 		static void handle_signal(int signum);
 		static void setup_signal_handlers();
+
+		void send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg);
 		
 		// void handle_new_connection();
 		// void handle_client_data(int client_fd);

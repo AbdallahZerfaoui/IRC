@@ -1,35 +1,39 @@
 #include "../includes/Server.hpp"
+#include "ParsedMessage.hpp"
 
 bool Server::_signal_received = false;
 
 const std::unordered_map<std::string, Server::CommandHandler> Server::handlers = {
-	{"PASS", [](Server& srv, int fd, std::istringstream& ss) {
-        return srv.parse_pass(fd, ss);
+	{"PASS", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.parse_pass(fd, msg);
     }},
-	{"NICK", [](Server& srv, int fd, std::istringstream& ss) {
-        return srv.parse_nick(fd, ss);
+	{"NICK", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.parse_nick(fd, msg);
     }},
-	{"USER", [](Server& srv, int fd, std::istringstream& ss) {
-        return srv.parse_user(fd, ss);
+	{"USER", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.parse_user(fd, msg);
     }},
-    {"PRIVMSG", [](Server& srv, int fd, std::istringstream& ss) {
-        return srv.handle_privmsg(fd, ss);
+    {"PRIVMSG", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.handle_privmsg(fd, msg);
     }},
-	{"PART", [](Server& srv, int fd, std::istringstream& ss) {
-        return srv.handle_part(fd, ss);
+	{"PART", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.handle_part(fd, msg);
     }},
-	{"JOIN", [](Server& srv, int fd, std::istringstream& ss) {
-        return srv.handle_join(fd, ss);
+	{"JOIN", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.handle_join(fd, msg);
     }},
-	{"HELP", [](Server& srv, int fd, std::istringstream& ss) {
-        return srv.handle_help(fd, ss);
+	{"HELP", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.handle_help(fd, msg);
     }},
-	{"CHANNELS", [](Server& srv, int fd, std::istringstream& ss) {
-        return srv.handle_channels(fd, ss);
+	{"CHANNELS", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.handle_channels(fd, msg);
     }},
-	{"QUIT", [](Server& srv, int fd, std::istringstream& ss) {
-        return srv.handle_quit(fd, ss);
+	{"QUIT", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.handle_quit(fd, msg);
     }},
+	// {"MODE", [](Server& srv, int fd, const ParsedMessage& msg) {
+    //     return srv.handle_mode(fd, msg);
+    // }},
 };
 
 // Helper functions
@@ -89,9 +93,16 @@ sockaddr_in Server::create_sockaddr_in(int port)
 // Constructor: Sets up the server
 Server::Server(int port, const std::string& password)
 	: _listening_socket(), // Initialize the listening socket (calls Socket::Socket())
+	_hostname(""),
 	_port(port),
 	_password(password)
 {
+	char hostname_buffer[256];
+	if (gethostname(hostname_buffer, sizeof(hostname_buffer)) != 0)
+	{
+		throw std::runtime_error(std::string("Failed to get hostname: ") + std::strerror(errno));
+	}
+	_hostname = hostname_buffer;
 	if (!valid_inputs(port, password))
 		return;
 	// Setup the server address structure
@@ -203,13 +214,11 @@ void Server::handle_new_connection()
 	// Initialize revents to 0
 	_pollfds.push_back({client_fd, POLLIN, 0});
 	try
-	{
-		std::string welcome_message = std::string(GREEN) + "Welcome to the server! You are connected with FD " + std::to_string(client_fd) + ".\n" + RESET
-									  "Please authenticate using the following commands:\n" + std::string(BLUE) + std::string(BOLD) + 
-									  "PASS <password>\n" +
-									  "NICK <nickname>\n" +
-									  "USER <username> 0 * :realname" + RESET;
-		_clients.at(client_fd).send(welcome_message);
+	{	
+		send_reply(client_fd, 704, { _clients.at(client_fd).get_nickname(), "*" }, "*** Available Commands ***");
+		send_reply(client_fd, 705, { _clients.at(client_fd).get_nickname(), "*" }, "PASS <password>");
+		send_reply(client_fd, 705, { _clients.at(client_fd).get_nickname(), "*" }, "NICK <nickname>");
+		send_reply(client_fd, 705, { _clients.at(client_fd).get_nickname(), "*" }, "USER <username> 0 * :realname\n");
 	}
 	catch (const std::exception& e)
 	{
@@ -235,456 +244,471 @@ void Server::handle_disconnection(size_t& index)
 	std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
 }
 
-int Server::parse_pass(int fd, std::istringstream& ss)
+void Server::send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg)
 {
-	std::string pass;
-	std::getline(ss >> std::ws, pass);
-    if (!_clients.at(fd).get_passed_pass())
-    {
-        if (pass == _password)
-        {
-            _clients.at(fd).set_passed_pass(pass);
-        }
-        else
-        {
-            std::cerr << RED << "Client FD " << fd << " failed authentication with PASS command.\n" << RESET;
-			try
-			{
-				std::string msg = std::string(RED) + "ERROR: Invalid password" + RESET;
-				_clients.at(fd).send(msg);
-			}
-			catch (const std::exception& e)
-			{
-				std::cerr << "Error sending message: " << e.what() << std::endl;
-			}
-            return -1;
-        }
+	std::string text = ':' + _hostname + ' ' + std::to_string(code) + ' ';
+    for (size_t i = 0; i < params.size(); ++i)
+	{
+        if (i)
+			text += ' ';
+		text += params[i];
     }
-    else
-    {
-        std::cerr << RED << "Client FD " << fd << ". You may not reregister" << RESET;
-		try
-		{
-			std::string msg = std::string(RED) + "ERROR: You may not reregister" + RESET;
-			_clients.at(fd).send(msg);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-        return -1;
-    }
-    return (0);
+    text += " :" + msg + "\r\n";
+	_clients.at(fd).send(text);
 }
 
-int Server::parse_nick(int fd, std::istringstream& ss)
+int Server::parse_pass(int fd, const ParsedMessage& msg)
 {
-	std::string nick;
-	std::getline(ss >> std::ws, nick);
-    if (is_duplicate_nickname(nick)
-		|| nick.find_first_of(" \n\r\v\t\f") != std::string::npos
-		|| !std::all_of(nick.begin(), nick.end(), [](unsigned char c){ return std::isalnum(c); }))
-    {
+	std::cout << "Parsing PASS command for FD " << fd << std::endl;
+	std::cout << "Client FD " << fd << " sent PASS command with params: ";
+	for (const auto& param : msg.params)
+	{
+		std::cout << param << " ";
+	}
+	std::cout << std::endl;
+
+	Client& client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
+
+	if (client.get_passed_pass())
+	{
 		try
 		{
-			std::string msg = std::string(RED) + "ERROR: Invalid nickname or a duplicate. Try it with another nickname" + RESET;
-			_clients.at(fd).send(msg);
+			send_reply(fd, 462, { nickname, "PASS" }, "You may not reregister");
 		}
 		catch (const std::exception& e)
 		{
 			std::cerr << "Error sending message: " << e.what() << std::endl;
 		}
-		return 1;
+		return 0;
+	}
+
+	if (msg.params.size() != 1 || msg.params[0].empty())
+	{
+		try
+		{
+			send_reply(fd, 461, { nickname, "PASS" }, "Not enough parameters");
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Error sending message: " << e.what() << std::endl;
+		}
+		return 0;
+	}
+
+	if (msg.params[0] != this->_password)
+	{
+		try
+		{
+			send_reply(fd, 464, { nickname, "PASS" }, "Password incorrect");
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Error sending message: " << e.what() << std::endl;
+		}
+		return 0;
+	}
+
+	client.set_passed_pass(msg.params[0]);
+	return 0;
+}
+
+int Server::parse_nick(int fd, const ParsedMessage& msg)
+{
+	std::cout << "Parsing NICK command for FD " << fd << std::endl;
+	std::cout << "Client FD " << fd << " sent NICK command with params: ";
+	for (const auto& param : msg.params)
+	{
+		std::cout << param << " ";
+	}
+	std::cout << std::endl;
+
+	Client& client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
+
+	if (msg.params.empty() || msg.params[0].empty())
+    {
+		try
+		{
+			send_reply(fd, 431, { nickname, "NICK" }, "No nickname given");
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << "Error sending message: " << e.what() << std::endl;
+		}
+        return 0;
     }
-    _clients.at(fd).set_passed_nick(nick);
+	std::string nick = msg.params[0];
+    if (!nick.empty() && nick[0] == ':')
+        nick.erase(0, 1);
+
+	if (![](const std::string &s)
+		{ return !s.empty() &&
+				 std::all_of(s.begin(), s.end(),
+							 [](unsigned char c)
+							 { return std::isalnum(c); }); })
+	{
+		try
+		{
+			send_reply(fd, 432, { nickname, "NICK" }, "Erroneous nickname");
+		}
+		catch (const std::exception &e)
+		{
+			std::cerr << "Error sending message: " << e.what() << std::endl;
+		}
+		return 0;
+	}
+
+	if (is_duplicate_nickname(nick))
+    {
+		try
+		{
+			send_reply(fd, 433, { nickname, "NICK" }, "Nickname is already in use");
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << "Error sending message: " << e.what() << std::endl;
+		}
+        return 0;
+    }
+	std::string old = client.get_nickname();
+    client.set_passed_nick(nick);
+	if (!old.empty() && old != "anonymous" && old != nick)
+    {
+        std::string text = old + " is now known as " + nick;
+		broadcast_to_all(text, fd);
+    }
     std::cout << GREEN << "Client FD " << fd << " set nickname to " << nick << ".\n" << RESET;
     return (0);
 }
 
-int Server::parse_user(int fd, std::istringstream& ss)
+void Server::broadcast_to_all(const std::string& message, int sender_fd)
 {
-    if (!_clients.at(fd).get_passed_user())
-    {
-        std::string username, hostname, servername, real;
-        ss >> username >> hostname >> servername;
-        std::getline(ss >> std::ws, real);
-        if (real.empty()
-			|| real[0] != ':'
-			|| hostname != "0"
-			|| servername != "*"
-			|| username.empty()
-			|| username.find_first_of(" \n\r\v\t\f") != std::string::npos
-			|| !std::all_of(username.begin(), username.end(), [](unsigned char c){ return std::isalnum(c); }))
-        {
+	for (const auto& client : _clients)
+	{
+		if (client.first != sender_fd)
+		{
+			std::string nickname = client.second.get_nickname();
 			try
 			{
-				std::string msg = std::string(RED) + "ERROR: Invalid USER command format. Use: USER <username> 0 * :realname" + RESET;
-				_clients.at(fd).send(msg);
+				send_reply(client.first, 462, { nickname }, message);
 			}
 			catch (const std::exception& e)
 			{
-				std::cerr << "Error sending message: " << e.what() << std::endl;
-			}       
-            return 1;
-        }
-        _clients.at(fd).set_passed_user(username);
-        _clients.at(fd).set_passed_realname(real.substr(1));
-        std::cout << GREEN << "Client FD " << fd << " set user to " << username << " with real name: " << real.substr(1) << ".\n" << RESET;
-    }
-    else
-    {
-        std::cerr << RED << "Client FD " << fd << ". You may not reregister.\n" << RESET;
-		try
-		{
-			std::string msg = std::string(RED) + "ERROR: You may not reregister" + RESET;
-			_clients.at(fd).send(msg);
+				std::cerr << "Error sending message: " << e.what() << '\n';
+			}
 		}
+	}
+}
+
+int Server::parse_user(int fd, const ParsedMessage& msg)
+{
+	std::cout << "Parsing USER command for FD " << fd << std::endl;
+	std::cout << "Client FD " << fd << " sent USER command with params: ";
+	for (const auto& param : msg.params)
+	{
+		std::cout << param << " ";
+	}
+	std::cout << std::endl;
+
+	Client& client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
+	if (client.get_passed_user())
+    {
+        try
+		{
+            send_reply(fd, 462, { nickname, "USER" }, "You may not reregister");
+        }
 		catch (const std::exception& e)
 		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-			return 1;
-		}        
+            std::cerr << "Error sending message: " << e.what() << '\n';
+        }
+        return 0;
     }
+    if (msg.params.size() < 4)
+    {
+        try
+		{
+            send_reply(fd, 461, { nickname, "USER" }, "Not enough parameters");
+        }
+		catch (const std::exception& e)
+		{
+            std::cerr << "Error sending message: " << e.what() << '\n';
+        }
+        return 0;
+    }
+	const std::string& username = msg.params[0];
+    const std::string& hostname = msg.params[1];
+    const std::string& servername = msg.params[2];
+    std::string  realname = msg.params[3];
+	if (!realname.empty() && realname[0] == ':')
+		realname.erase(0, 1);
+
+	if (username.empty() ||
+		hostname != "0" ||
+		servername != "*" ||
+		username.find_first_of(" \t\r\n\v\f") != std::string::npos ||
+		!std::all_of(username.begin(), username.end(),
+					 [](unsigned char c)
+					 { return std::isalnum(c); }))
+	{
+		try
+		{
+			send_reply(fd, 461, { nickname, "USER" }, "Invalid USER format. Use: USER <username> 0 * :realname");
+		}
+		catch (const std::exception &e)
+		{
+			std::cerr << "Error sending message: " << e.what() << '\n';
+		}
+		return 0;
+	}
+
+	client.set_passed_user(username);
+    client.set_passed_realname(realname);
+    std::cout << GREEN << "Client FD " << fd << " set user to " << username << " with real name: " << realname << ".\n" << RESET;
     return (0);
 }
 
-
-int Server::handle_help(int fd, std::istringstream& ss)
+int Server::handle_help(int fd, const ParsedMessage &msg)
 {
-	(void)ss;
-	try
-	{
-		std::string msg = std::string(GREEN) +
-		"Use the following commands:\n" +
-		+ RESET +
-		std::string(BLUE) + std::string(BOLD) + "HELP " + RESET + "(to see this message again)\n" +
-		std::string(BLUE) + std::string(BOLD) + "CHANNELS " + RESET + "(to see which channels you are in)\n" +
-		std::string(BLUE) + std::string(BOLD) + "JOIN <#channel_name> " + RESET + "(to join a channel)\n" +
-		std::string(BLUE) + std::string(BOLD) + "PART <#channel_name> " + RESET + "(to leave a channel)\n" +
-		std::string(BLUE) + std::string(BOLD) + "PRIVMSG <#channel_name or nickname> <message> " + RESET + "(to send a message to a channel)\n" +
-		std::string(BLUE) + std::string(BOLD) + "NICK <nickname> " + RESET + "(to change your nickname)\n" +
-		std::string(BLUE) + std::string(BOLD) + "QUIT " + RESET + "(to disconnect from the server)";
-		_clients.at(fd).send(msg);
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << "Error sending message: " << e.what() << std::endl;
-		return 1;
-	}
+	(void)msg;
+	Client &client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
+
+	send_reply(fd, 704, {nickname, "*"}, "*** Available HELP topics ***");
+	send_reply(fd, 705, {nickname, "*"}, "HELP                    :show this list");
+	send_reply(fd, 705, {nickname, "*"}, "CHANNELS                :list channels you are in");
+	send_reply(fd, 705, {nickname, "*"}, "JOIN <#channel>         :join/create channel");
+	send_reply(fd, 705, {nickname, "*"}, "PART <#channel>         :leave channel");
+	send_reply(fd, 705, {nickname, "*"}, "PRIVMSG <target> <text> :send a message");
+	send_reply(fd, 705, {nickname, "*"}, "QUIT                    :disconnect");
+	send_reply(fd, 706, {nickname, "*"}, "*** End of HELP ***\n");
 	return 0;
 }
 
-int Server::handle_channels(int fd, std::istringstream& ss)
+int Server::handle_channels(int fd, const ParsedMessage& msg)
 {
-	// It doenst use the stringstream ss, so it must be used to avoid unused parameter warning
-	(void)ss;
+	(void)msg;
+	Client &client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
+
 	try
 	{
-		std::string msg = std::string(GREEN) + "You are in the following channels:\n";
+		std::string list;
 		for (const auto& channel : _channels)
 		{
 			if (channel.second.get_members().count(fd))
 			{
-				msg += std::string(BLUE) + std::string(BOLD) + "#" + channel.first + "\n";
+				list + '#' + channel.first + ' ';
 			}
 		}
-		if (msg == std::string(GREEN) + "You are in the following channels:\n")
-			msg += "None\n";
-		msg += RESET;
-		_clients.at(fd).send(msg);
+		if (list.empty())
+		{
+			list = "None";
+		}
+		send_reply(fd, 705, { nickname, "CHANNELS" }, list);
+
 	}
 	catch (const std::exception& e)
 	{
 		std::cerr << "Error sending message: " << e.what() << std::endl;
-		return 1;
+		return 0;
 	}
 	return 0;
 }
 
-int Server::handle_join(int fd, std::istringstream& ss)
+int Server::handle_join(int fd, const ParsedMessage& msg)
 {
-	std::string channel_name;
-	std::getline(ss >> std::ws, channel_name);
-	if (channel_name.empty() || channel_name.size() < 2 || channel_name[0] != '#')
+	Client &client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
+
+	if (msg.params.empty())
 	{
-		std::cerr << RED << "Client FD " << fd << " sent an invalid JOIN command: " << channel_name << RESET << std::endl;
-		try
-		{
-			std::string msg = std::string(RED) + "ERROR: Invalid channel name. Use #channel_name." + RESET;
-			_clients.at(fd).send(msg);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-		return 1;
+		send_reply(fd, 461, { nickname, "JOIN" }, "Not enough parameters");
+		return 0;
 	}
-	channel_name.erase(0, 1);
-	// Check if the channel already exists
-	auto it = _channels.find(channel_name);
-	if (it == _channels.end())
+
+	std::string chan = msg.params[0];
+    if (chan.empty() || chan[0] != '#')
 	{
-		// Channel doesnt exist => create it
-		_channels.emplace(channel_name, Channel(channel_name, _clients));
-		std::cout << GREEN << "Channel " << channel_name << " was created!" << RESET << std::endl;
+		send_reply(fd, 476, { nickname, "JOIN" }, "Bad channel name");
+		return 0;
 	}
+
+	chan.erase(0, 1);
+
+	// Add the channel to the channels map, if it doesn't exist
+	if (!_channels.count(chan))
+		_channels.emplace(chan, Channel(chan, _clients));
+
 	// Add the client to the channel
-	_channels.at(channel_name).add_client(fd);
+	_channels.at(chan).add_client(fd);
 	try
 	{
-		std::string msg = std::string(GREEN) + "You have joined channel: " + channel_name + RESET;
-		_clients.at(fd).send(msg);
+		send_reply(fd, 476, { nickname }, "You have joined the channel " + chan);
 	}
 	catch (const std::exception& e)
 	{
 		std::cerr << "Error sending message: " << e.what() << std::endl;
-		return 1;
+		return 0;
 	}
-	std::string message = "Joined the channel";
-	std::cout << GREEN << message << RESET << std::endl;
 	// Notify other clients in the channel (forward a message to all other clients in the channel)
-	_channels.at(channel_name).broadcast_message(message, fd);
+	_channels.at(chan).broadcast_message(client.get_nickname() + " has joined the channel", fd);
 	return 0;
 }
 
-int Server::handle_part(int fd, std::istringstream& ss)
+int Server::handle_part(int fd, const ParsedMessage& msg)
 {
-	std::string channel_name;
-	std::getline(ss >> std::ws, channel_name);
-	if (channel_name.empty() || channel_name.size() < 2 || channel_name[0] != '#')
+	Client &client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
+
+    if (msg.params.empty())
 	{
-		try
-		{
-			std::string msg = std::string(RED) + "ERROR: Invalid channel name. Use #channel_name." + RESET;
-			_clients.at(fd).send(msg);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-		return 1;
+        send_reply(fd, 461, { nickname, "PART" }, "Not enough parameters");
+		return 0;
 	}
-	channel_name.erase(0, 1);
-	auto it = _channels.find(channel_name);
+
+	std::string chan = msg.params[0];
+    if (chan[0] != '#')
+	{
+		send_reply(fd, 476, { nickname, "PART" }, "Bad channel mask");
+		return 0;
+	}
+
+	chan.erase(0,1);
+
+	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		try
-		{
-			std::string msg = std::string(RED) + "ERROR: You are not in this channel." + RESET;
-			_clients.at(fd).send(msg);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-		return 1;
+		send_reply(fd, 403, { nickname, "PART", "#" + chan}, "No such channel");
+		return 0;
 	}
-	if (!_channels.at(channel_name).remove_client(fd))
+
+	if (!it->second.remove_client(fd))
 	{
-		try
-		{
-			std::string msg = std::string(RED) + "ERROR: You are not in this channel." + RESET;
-			_clients.at(fd).send(msg);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-		return 1;
+		send_reply(fd, 442, { nickname, "PART", "#" + chan}, "You're not on that channel");
+		return 0;
 	}
-	std::string message = "Has left the channel.";
-	std::cout << GREEN << message << RESET << std::endl;
-	// Notify other clients in the channel (forward a message to all other clients in the channel)
-	_channels.at(channel_name).broadcast_message(message, fd);
-	try
-	{
-		std::string msg = std::string(GREEN) + "You have left the channel: " + channel_name + RESET;
-		_clients.at(fd).send(msg);
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << "Error sending message: " << e.what() << std::endl;
-		return 1;
-	}
+
+	_channels.at(chan).broadcast_message(client.get_nickname() + " has left the channel.", fd);
 	return 0;
 }
 
-int Server::handle_privmsg(int fd, std::istringstream& ss)
+int Server::find_fd_by_nickname(std::string const &nickname) const
 {
-	std::string target, message;
-	std::getline(ss >> std::ws, target, ' ');
-	std::getline(ss >> std::ws, message);
-	if (target.empty() || message.empty())
+	for (const auto& client : _clients)
 	{
-		try
-		{
-			std::string msg = std::string(RED) + "ERROR: Invalid PRIVMSG command format. Use PRIVMSG <#channel_name or nickname> <message>" + RESET;
-			_clients.at(fd).send(msg);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-		return -1;
+		if (client.second.get_nickname() == nickname)
+			return client.first;
 	}
-	if (target[0] == '#')
-	{
-		// Target is a channel
-		target.erase(0, 1);
-		auto it = _channels.find(target);
-		if (it == _channels.end())
-		{
-			try
-			{
-				std::string msg = std::string(RED) + "ERROR: Channel does not exist" + RESET;
-				_clients.at(fd).send(msg);
-			}
-			catch (const std::exception& e)
-			{
-				std::cerr << "Error sending message: " << e.what() << std::endl;
-			}
-			return -1;
-		}
-		it->second.broadcast_message(message, fd);
-	}
-	else
-	{
-		// Target is a user
-		bool found = false;
-		for (auto& client : _clients)
-		{
-			if (client.second.get_nickname() == target)
-			{
-				try
-				{
-					std::string msg = "<" + _clients.at(fd).get_nickname() + ": " + message + RESET;
-					client.second.send(msg);
-				}
-				catch (const std::exception& e)
-				{
-					std::cerr << "Error sending message: " << e.what() << std::endl;
-					continue;
-				}
-				found = true;
-				break;
-			}
-		}
-		if (!found)
-		{
-			try
-			{
-				std::string msg = std::string(RED) + "ERROR: User does not exist." + RESET;
-				_clients.at(fd).send(msg);
-			}
-			catch (const std::exception& e)
-			{
-				std::cerr << "Error sending message: " << e.what() << std::endl;
-			}
-		}
-	}
-	return 0;
-}
-
-int Server::handle_quit(int fd, std::istringstream& ss)
-{
-	(void)ss;
-	(void)fd;
 	return -1;
 }
 
-int Server::handle_client_command(size_t &index, int client_fd, const std::vector<std::string>& lines)
+int Server::handle_privmsg(int fd, const ParsedMessage& msg)
 {
-    std::cout << "Handling command for client FD " << client_fd << std::endl;
-    for (auto &line : lines)
+	Client& client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
+	if (msg.params.size() < 2)
+	{
+		send_reply(fd, 442, { nickname, "PRIVMSG" }, "Not enough parameters");
+		return 0;
+	}
+	const std::string& target = msg.params[0];
+    std::string text = msg.params[1];
+    if (!text.empty() && text[0] == ':')
+        text.erase(0,1);
+
+	if (!target.empty() && target[0] == '#')
+	{
+		std::string chan = target.substr(1);
+        auto it = _channels.find(chan);
+		if (it == _channels.end())
+		{
+			send_reply(fd, 403, { nickname, "PRIVMSG", target }, "Not such channel");
+			return 0;
+		}
+
+		Channel& ch = it->second;
+		if (!ch.has_member(fd))
+		{
+			send_reply(fd, 404, { nickname, "PRIVMSG", target }, "Cannot send to channel");
+			return 0;
+		}
+		
+        ch.broadcast_message(text, fd);
+
+		return 0;
+	}
+
+	int fdtg = find_fd_by_nickname(target);
+	if (fdtg == -1)
+	{
+		send_reply(fd, 401, { nickname, "PRIVMSG", target }, "No such nickname");
+		return 0;
+	}
+
+	std::string message = ':' + _clients.at(fd).get_nickname() + "@host PRIVMSG " + " :" + text + "\r\n";
+	_clients.at(fdtg).send(message);
+	// send_reply(fdtg, 705, { nickname, "PRIVMSG", target }, message);
+	return 0;
+}
+
+int Server::handle_quit(int fd, const ParsedMessage& msg)
+{
+	(void)fd;
+	(void)msg;
+	return -1;
+}
+
+int Server::handle_client_command(size_t &index, int client_fd, const ParsedMessage& parsedmsg)
+{
+	if (parsedmsg.command.empty())
+	{
+		return 0;
+	}
+
+	Client& client = _clients.at(client_fd);
+	std::string nickname = client.get_nickname();
+
+	if (parsedmsg.command != "PASS" && !client.get_passed_pass())
     {
-        std::string command;
-        std::istringstream ss(line);
-        ss >> command;
-		auto it = handlers.find(command);
-		if (command != "PASS" && !_clients.at(client_fd).get_passed_pass())
-		{
-			try
-			{
-				std::string msg = std::string(YELLOW) + "Your're not authenticated yet. Use PASS <password>, NICK <nickname> or USER <username 0 * :real-name>" + RESET;
-				_clients.at(client_fd).send(msg);
-			}
-			catch (const std::exception& e)
-			{
-				std::cerr << "Error sending message: " << e.what() << std::endl;
-			}
-			continue;
-		}
-		else if (command != "PASS" && command != "NICK" && command != "USER" && !_clients.at(client_fd).is_authenticated())
-		{
-			try
-			{
-				std::string msg = std::string(YELLOW) + "You must authenticate with PASS, NICK, and USER commands before sending other commands." + RESET;
-				_clients.at(client_fd).send(msg);
-			}
-			catch (const std::exception& e)
-			{
-				std::cerr << "Error sending message: " << e.what() << std::endl;
-			}
-			continue;
-		}
-        if (it != handlers.end())
-        {
-			if (it->second(*this, client_fd, ss) == -1)
-			{
-				handle_disconnection(index);
-				return 1;
-			}
-        }
-        else
-        {
-			if (!_clients.at(client_fd).is_authenticated())
-			{
-				try
-				{
-					std::string msg = std::string(RED) + "ERROR: Invalid command. Use PASS, NICK, or USER." + RESET;
-					_clients.at(client_fd).send(msg);
-				}
-				catch (const std::exception& e)
-				{
-					std::cerr << "Error sending message: " << e.what() << std::endl;
-				}
-				continue;
-			}
-			else
-			{
-				try
-				{
-					std::string msg = std::string(RED) + "ERROR: Invalid command. Use JOIN, PART, PRIVMSG, QUIT, NICK, or USER." + RESET;
-					_clients.at(client_fd).send(msg);
-				}
-				catch (const std::exception& e)
-				{
-					std::cerr << "Error sending message: " << e.what() << std::endl;
-				}
-				continue;
-			}
-        }
+        send_reply(client_fd, 451, { nickname }, "You have not registered");
+        return 0;
     }
-	if (!_clients.at(client_fd).is_authenticated() &&
-    	_clients.at(client_fd).get_passed_pass() &&
-        _clients.at(client_fd).get_passed_nick() &&
-        _clients.at(client_fd).get_passed_user())
+
+	if (!client.is_authenticated() &&
+		parsedmsg.command != "PASS" &&
+		parsedmsg.command != "NICK" &&
+		parsedmsg.command != "USER")
+	{
+		send_reply(client_fd, 451, { nickname }, "You have not registered");
+		return 0;
+	}
+
+	auto it = handlers.find(parsedmsg.command);
+    if (it == handlers.end())
     {
-        _clients.at(client_fd).set_authenticated();
-        std::cout << GREEN << "Client FD " << client_fd << " successfully authenticated." << RESET << std::endl;
-		try
-		{
-			std::string msg = std::string(GREEN) + "Welcome to the server, " + _clients.at(client_fd).get_nickname() + ". You are now authenticated!" + RESET;
-			_clients.at(client_fd).send(msg);
-			std::istringstream params("");
-			handle_help(client_fd, params);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-			return 1;
-		}
+        send_reply(client_fd, 421, { nickname, parsedmsg.command }, "Unknown command");
+        return 0;
     }
+    if (it->second(*this, client_fd, parsedmsg) == -1)
+    {
+        handle_disconnection(index);
+        return 1;
+    }
+
+	if (!client.is_authenticated() &&
+		client.get_passed_pass() &&
+		client.get_passed_nick() &&
+		client.get_passed_user())
+	{
+		client.set_authenticated();
+
+		send_reply(client_fd, 001, { nickname },
+				   "Welcome to ft_irc, " + client.get_nickname());
+
+		handle_help(client_fd, ParsedMessage(""));
+	}
 	return 0;
 }
 
@@ -710,21 +734,14 @@ void Server::process_client_data(size_t& index, int client_fd)
 		return ;
 	}
 	std::string line;
-	std::vector<std::string> lines;
-	while (!(line = _clients.at(client_fd).extract_output_line()).empty())
-	{
-		lines.push_back(line);
-	}
+	line = _clients.at(client_fd).extract_output_line();
+
 	// If there are no complete lines => just return
-	if (lines.empty())
+	if (line.empty())
 		return ;
-	// handle authentication. Check if the client sent PASS, NICK, USER commands. If not, send an error message back.
-	// if (!_clients.at(client_fd).is_authenticated())
-	// {
-	// 	handle_authentication(index, client_fd, lines);
-	// }
-	// // If the client is authenticated, process the command
-	handle_client_command(index, client_fd, lines);
+	
+	ParsedMessage parsedmsg(line);
+	handle_client_command(index, client_fd, parsedmsg);
 }
 
 // The main server loop for Block 1
