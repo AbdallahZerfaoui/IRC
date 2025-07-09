@@ -66,6 +66,12 @@ class Server
 		int handle_help(int fd, const ParsedMessage& msg);
 		int handle_channels(int fd, const ParsedMessage& msg);
 		int handle_quit(int fd, const ParsedMessage& msg);
+		int handle_ping(int fd, const ParsedMessage& msg);
+		int handle_mode(int fd, const ParsedMessage& msg);
+		int handle_kick(int fd, const ParsedMessage& msg);
+		int handle_invite(int fd, const ParsedMessage& msg);
+		int handle_topic(int fd, const ParsedMessage& msg);
+		std::vector<std::string> split(const std::string& str, char delimiter);
 		
 	public:
 		// Socket get_listening_socket() const;
