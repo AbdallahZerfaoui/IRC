@@ -215,58 +215,58 @@ void Server::setup_signal_handlers()
 	std::cout << GREEN << "Signal handlers for SIGINT and SIGQUIT set up." << RESET << std::endl;
 }
 
-void Server::handle_new_connection()
-{
-	// Accept a new connection
-    std::unique_ptr<Socket> client_socket = _listening_socket.accept();
-    if (!client_socket)
-    {
-        std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
-        return ;
-    }
-    int client_fd = client_socket->get_fd();
+// void Server::handle_new_connection()
+// {
+// 	// Accept a new connection
+//     std::unique_ptr<Socket> client_socket = _listening_socket.accept();
+//     if (!client_socket)
+//     {
+//         std::cerr << "Error accepting new connection: " << std::strerror(errno) << std::endl;
+//         return ;
+//     }
+//     int client_fd = client_socket->get_fd();
 
-	// Create a new Client with the accepted socket and store the client in the clients map
-	// Client(std::move(client_socket)): Creates a temporary Client object that takes ownsership of the socket
-	// _client.emplace(...): Inserts the client in the map and therefore the client is accessible even after the function returns
-	_clients.emplace(client_fd, Client(std::move(client_socket)));
-	std::cout << "New connection accepted on FD " << client_fd << std::endl;
+// 	// Create a new Client with the accepted socket and store the client in the clients map
+// 	// Client(std::move(client_socket)): Creates a temporary Client object that takes ownsership of the socket
+// 	// _client.emplace(...): Inserts the client in the map and therefore the client is accessible even after the function returns
+// 	_clients.emplace(client_fd, Client(std::move(client_socket)));
+// 	std::cout << "New connection accepted on FD " << client_fd << std::endl;
 
-    // std::cout << "Was it inserted? " << (a.second ? "Yes" : "No") << std::endl;
-	// Add the new client socket to the pollfd vector
-	// We are interested in read events (client data) -> POLLIN
-	// Initialize revents to 0
-	_pollfds.push_back({client_fd, POLLIN, 0});
-	try
-	{	
-		send_reply(client_fd, 704, { _clients.at(client_fd).get_nickname(), "*" }, "*** Available Commands ***");
-		send_reply(client_fd, 705, { _clients.at(client_fd).get_nickname(), "*" }, "PASS <password>");
-		send_reply(client_fd, 705, { _clients.at(client_fd).get_nickname(), "*" }, "NICK <nickname>");
-		send_reply(client_fd, 705, { _clients.at(client_fd).get_nickname(), "*" }, "USER <username> 0 * :realname\n");
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << "Error sending message: " << e.what() << std::endl;
-		return ;
-	}
-	std::cout << GREEN << "New client added to poll list." << RESET << std::endl;
-}
+//     // std::cout << "Was it inserted? " << (a.second ? "Yes" : "No") << std::endl;
+// 	// Add the new client socket to the pollfd vector
+// 	// We are interested in read events (client data) -> POLLIN
+// 	// Initialize revents to 0
+// 	_pollfds.push_back({client_fd, POLLIN, 0});
+// 	try
+// 	{	
+// 		send_reply(client_fd, 704, { _clients.at(client_fd).get_nickname(), "*" }, "*** Available Commands ***");
+// 		send_reply(client_fd, 705, { _clients.at(client_fd).get_nickname(), "*" }, "PASS <password>");
+// 		send_reply(client_fd, 705, { _clients.at(client_fd).get_nickname(), "*" }, "NICK <nickname>");
+// 		send_reply(client_fd, 705, { _clients.at(client_fd).get_nickname(), "*" }, "USER <username> 0 * :realname\n");
+// 	}
+// 	catch (const std::exception& e)
+// 	{
+// 		std::cerr << "Error sending message: " << e.what() << std::endl;
+// 		return ;
+// 	}
+// 	std::cout << GREEN << "New client added to poll list." << RESET << std::endl;
+// }
 
-void Server::handle_disconnection(size_t& index)
-{
-	// Handle disconnection of a client
-	std::cout << "Client on FD " << _pollfds[index].fd << " disconnected." << std::endl;
+// void Server::handle_disconnection(size_t& index)
+// {
+// 	// Handle disconnection of a client
+// 	std::cout << "Client on FD " << _pollfds[index].fd << " disconnected." << std::endl;
 
-    //ADDED (tobias): Remove the client from the _clients map
-    // _clients.erase(client_fd);
-	_clients.erase(_pollfds[index].fd);
+//     //ADDED (tobias): Remove the client from the _clients map
+//     // _clients.erase(client_fd);
+// 	_clients.erase(_pollfds[index].fd);
 
-	// Remove the client socket from the pollfd vector
-	close(_pollfds[index].fd);
-	_pollfds.erase(_pollfds.begin() + index); // Remove from pollfd vector
-	--index;
-	std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
-}
+// 	// Remove the client socket from the pollfd vector
+// 	close(_pollfds[index].fd);
+// 	_pollfds.erase(_pollfds.begin() + index); // Remove from pollfd vector
+// 	--index;
+// 	std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
+// }
 
 void Server::send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg)
 {
@@ -820,37 +820,37 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 	return 0;
 }
 
-void Server::process_client_data(size_t& index, int client_fd)
-{
-	char buffer[2];
-	ssize_t bytes_read;
-	while ((bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) > 0)
-	{
-		// Write to the buffer which is used to store data the client sends
-		_clients.at(client_fd).write_output_buffer(std::string(buffer, bytes_read));
-	}
-	if (bytes_read == 0)
-	{
-		std::cout << "Client disconnected (recv returned 0)" << std::endl;
-		handle_disconnection(index);
-		return ;
-	}
-	else if (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
-	{
-		std::cerr << "recv() failed: " << std::strerror(errno) << std::endl;
-		handle_disconnection(index);
-		return ;
-	}
-	std::string line;
-	line = _clients.at(client_fd).extract_output_line();
+// void Server::process_client_data(size_t& index, int client_fd)
+// {
+// 	char buffer[2];
+// 	ssize_t bytes_read;
+// 	while ((bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) > 0)
+// 	{
+// 		// Write to the buffer which is used to store data the client sends
+// 		_clients.at(client_fd).write_output_buffer(std::string(buffer, bytes_read));
+// 	}
+// 	if (bytes_read == 0)
+// 	{
+// 		std::cout << "Client disconnected (recv returned 0)" << std::endl;
+// 		handle_disconnection(index);
+// 		return ;
+// 	}
+// 	else if (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
+// 	{
+// 		std::cerr << "recv() failed: " << std::strerror(errno) << std::endl;
+// 		handle_disconnection(index);
+// 		return ;
+// 	}
+// 	std::string line;
+// 	line = _clients.at(client_fd).extract_output_line();
 
-	// If there are no complete lines => just return
-	if (line.empty())
-		return ;
+// 	// If there are no complete lines => just return
+// 	if (line.empty())
+// 		return ;
 	
-	ParsedMessage parsedmsg(line);
-	handle_client_command(index, client_fd, parsedmsg);
-}
+// 	ParsedMessage parsedmsg(line);
+// 	handle_client_command(index, client_fd, parsedmsg);
+// }
 
 int Server::handle_ping(int fd, const ParsedMessage& msg)
 {

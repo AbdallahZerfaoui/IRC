@@ -28,8 +28,14 @@ NAME = ircserv
 # Source files
 # For Block 1, we have these:
 # SRCS = main.cpp src/Server.cpp src/Socket.cpp src/Client.cpp
-SRCS = Server.cpp Socket.cpp Client.cpp Channel.cpp ParsedMessage.cpp
-SRCS := main.cpp $(addprefix $(SRCS_DIR)/, $(SRCS))
+
+# SRCS = Server.cpp Socket.cpp Client.cpp Channel.cpp ParsedMessage.cpp
+# SRCS := main.cpp $(addprefix $(SRCS_DIR)/, $(SRCS))
+
+# SRCS = Server.cpp Socket.cpp Client.cpp Channel.cpp ParsedMessage.cpp main.cpp
+# SRCS := $(addprefix $(SRCS_DIR)/, $(SRCS))
+SRCS := $(shell find $(SRCS_DIR) -type f -name '*.cpp') #TODO: check if we are allowed to use find
+
 
 # Object files (derived from SRCS)
 # OBJS = $(SRCS:.cpp=.o)
