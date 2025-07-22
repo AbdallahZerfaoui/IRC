@@ -708,58 +708,58 @@ int Server::find_fd_by_nickname(std::string const &nickname) const
 	return -1;
 }
 
-int Server::handle_privmsg(int fd, const ParsedMessage& msg)
-{
-	Client& client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
-	if (msg.params.size() < 2)
-	{
-		send_reply(fd, 411, { nickname, "PRIVMSG" }, "No recipient given");
-		return 0;
-	}
+// int Server::handle_privmsg(int fd, const ParsedMessage& msg)
+// {
+// 	Client& client = _clients.at(fd);
+// 	std::string nickname = client.get_nickname();
+// 	if (msg.params.size() < 2)
+// 	{
+// 		send_reply(fd, 411, { nickname, "PRIVMSG" }, "No recipient given");
+// 		return 0;
+// 	}
 
-	std::vector<std::string> targets = split(msg.params[0], ',');
-    std::string text = msg.params[1];
-    if (!text.empty() && text[0] == ':') {
-        text.erase(0, 1);
-	}
+// 	std::vector<std::string> targets = split(msg.params[0], ',');
+//     std::string text = msg.params[1];
+//     if (!text.empty() && text[0] == ':') {
+//         text.erase(0, 1);
+// 	}
 
-	for (size_t i = 0; i < targets.size(); ++i)
-    {
-        if (!targets[i].empty() && targets[i][0] == '#')
-        {
-            std::string chan = targets[i].substr(1);
-            auto it = _channels.find(chan);
-            if (it == _channels.end())
-            {
-                send_reply(fd, 403, { nickname, targets[i] }, "No such channel");
-                continue;
-            }
+// 	for (size_t i = 0; i < targets.size(); ++i)
+//     {
+//         if (!targets[i].empty() && targets[i][0] == '#')
+//         {
+//             std::string chan = targets[i].substr(1);
+//             auto it = _channels.find(chan);
+//             if (it == _channels.end())
+//             {
+//                 send_reply(fd, 403, { nickname, targets[i] }, "No such channel");
+//                 continue;
+//             }
 
-            Channel& ch = it->second;
-            if (!ch.has_member(fd))
-            {
-                send_reply(fd, 404, { nickname, targets[i] }, "Cannot send to channel");
-                continue;
-            }
+//             Channel& ch = it->second;
+//             if (!ch.has_member(fd))
+//             {
+//                 send_reply(fd, 404, { nickname, targets[i] }, "Cannot send to channel");
+//                 continue;
+//             }
 
-			std::string message1 = ':' + _clients.at(fd).get_nickname() + "@host PRIVMSG #" + _channels.at(chan).get_name() + " :" + text + "\r\n";
-            ch.broadcast_message(message1, fd);
-            continue;
-        }
+// 			std::string message1 = ':' + _clients.at(fd).get_nickname() + "@host PRIVMSG #" + _channels.at(chan).get_name() + " :" + text + "\r\n";
+//             ch.broadcast_message(message1, fd);
+//             continue;
+//         }
 
-		int fdtg = find_fd_by_nickname(targets[i]);
-		if (fdtg == -1)
-		{
-			send_reply(fd, 401, { nickname, "PRIVMSG", targets[i] }, "No such nickname");
-			continue ;
-		}
+// 		int fdtg = find_fd_by_nickname(targets[i]);
+// 		if (fdtg == -1)
+// 		{
+// 			send_reply(fd, 401, { nickname, "PRIVMSG", targets[i] }, "No such nickname");
+// 			continue ;
+// 		}
 
-		std::string message = ':' + client.get_nickname() + "@host PRIVMSG " + targets[i] + " :" + text + "\r\n";
-		client.send(message);
-	}
-	return 0;
-}
+// 		std::string message = ':' + client.get_nickname() + "@host PRIVMSG " + targets[i] + " :" + text + "\r\n";
+// 		client.send(message);
+// 	}
+// 	return 0;
+// }
 
 int Server::handle_quit(int fd, const ParsedMessage& msg)
 {
@@ -768,57 +768,57 @@ int Server::handle_quit(int fd, const ParsedMessage& msg)
 	return -1;
 }
 
-int Server::handle_client_command(size_t &index, int client_fd, const ParsedMessage& parsedmsg)
-{
-	if (parsedmsg.command.empty())
-	{
-		return 0;
-	}
+// int Server::handle_client_command(size_t &index, int client_fd, const ParsedMessage& parsedmsg)
+// {
+// 	if (parsedmsg.command.empty())
+// 	{
+// 		return 0;
+// 	}
 
-	Client& client = _clients.at(client_fd);
-	std::string nickname = client.get_nickname();
+// 	Client& client = _clients.at(client_fd);
+// 	std::string nickname = client.get_nickname();
 
-	if (parsedmsg.command != "PASS" && !client.get_passed_pass())
-    {
-        send_reply(client_fd, 451, { nickname }, "You have not registered");
-        return 0;
-    }
+// 	if (parsedmsg.command != "PASS" && !client.get_passed_pass())
+//     {
+//         send_reply(client_fd, 451, { nickname }, "You have not registered");
+//         return 0;
+//     }
 
-	if (!client.is_authenticated() &&
-		parsedmsg.command != "PASS" &&
-		parsedmsg.command != "NICK" &&
-		parsedmsg.command != "USER")
-	{
-		send_reply(client_fd, 451, { nickname }, "You have not registered");
-		return 0;
-	}
+// 	if (!client.is_authenticated() &&
+// 		parsedmsg.command != "PASS" &&
+// 		parsedmsg.command != "NICK" &&
+// 		parsedmsg.command != "USER")
+// 	{
+// 		send_reply(client_fd, 451, { nickname }, "You have not registered");
+// 		return 0;
+// 	}
 
-	auto it = handlers.find(parsedmsg.command);
-    if (it == handlers.end())
-    {
-        send_reply(client_fd, 421, { nickname, parsedmsg.command }, "Unknown command");
-        return 0;
-    }
-    if (it->second(*this, client_fd, parsedmsg) == -1)
-    {
-        handle_disconnection(index);
-        return 1;
-    }
+// 	auto it = handlers.find(parsedmsg.command);
+//     if (it == handlers.end())
+//     {
+//         send_reply(client_fd, 421, { nickname, parsedmsg.command }, "Unknown command");
+//         return 0;
+//     }
+//     if (it->second(*this, client_fd, parsedmsg) == -1)
+//     {
+//         handle_disconnection(index);
+//         return 1;
+//     }
 
-	if (!client.is_authenticated() &&
-		client.get_passed_pass() &&
-		client.get_passed_nick() &&
-		client.get_passed_user())
-	{
-		client.set_authenticated();
+// 	if (!client.is_authenticated() &&
+// 		client.get_passed_pass() &&
+// 		client.get_passed_nick() &&
+// 		client.get_passed_user())
+// 	{
+// 		client.set_authenticated();
 
-		send_reply(client_fd, 001, { nickname },
-				   "Welcome to ft_irc, " + client.get_nickname());
+// 		send_reply(client_fd, 001, { nickname },
+// 				   "Welcome to ft_irc, " + client.get_nickname());
 
-		handle_help(client_fd, ParsedMessage(""));
-	}
-	return 0;
-}
+// 		handle_help(client_fd, ParsedMessage(""));
+// 	}
+// 	return 0;
+// }
 
 // void Server::process_client_data(size_t& index, int client_fd)
 // {
@@ -852,28 +852,28 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 // 	handle_client_command(index, client_fd, parsedmsg);
 // }
 
-int Server::handle_ping(int fd, const ParsedMessage& msg)
-{
-	Client& client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
+// int Server::handle_ping(int fd, const ParsedMessage& msg)
+// {
+// 	Client& client = _clients.at(fd);
+// 	std::string nickname = client.get_nickname();
 
-	if (msg.params.empty())
-	{
-		send_reply(fd, 461, { nickname, "PING" }, "Not enough parameters");
-		return 0;
-	}
+// 	if (msg.params.empty())
+// 	{
+// 		send_reply(fd, 461, { nickname, "PING" }, "Not enough parameters");
+// 		return 0;
+// 	}
 
-	std::string target = msg.params[0];
-	if (target.empty() || target[0] != ':')
-	{
-		send_reply(fd, 409, { nickname, "PING" }, "Invalid PING format. Use: PING :target");
-		return 0;
-	}
+// 	std::string target = msg.params[0];
+// 	if (target.empty() || target[0] != ':')
+// 	{
+// 		send_reply(fd, 409, { nickname, "PING" }, "Invalid PING format. Use: PING :target");
+// 		return 0;
+// 	}
 
-	std::string response = ':' + _hostname + ' ' + "PONG" + ' ' + target + "\r\n";
-	client.send(response);
-	return 0;
-}
+// 	std::string response = ':' + _hostname + ' ' + "PONG" + ' ' + target + "\r\n";
+// 	client.send(response);
+// 	return 0;
+// }
 
 // The main server loop for Block 1
 void Server::run()
