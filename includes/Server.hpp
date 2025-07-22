@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <cstring> // For strerror
 #include <sstream> // For std::istringstream
+#include <functional>
 # include "ParsedMessage.hpp"
 
 // Constants

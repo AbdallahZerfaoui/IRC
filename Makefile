@@ -17,7 +17,8 @@ OBJSDIR = ./objs
 
 # Compiler flags
 # For C++17
-CXXFLAGS = -std=c++17 -Wall -Wextra -Werror -g
+CXXFLAGS = -std=c++17 -Wall -Wextra -Werror -g -Wpedantic -fdiagnostics-color=always \
+    -fdiagnostics-show-option -fno-diagnostics-show-caret
 # For C++98 (as per project, but you asked for C++17 for this example)
 # CXXFLAGS = -std=c++98 -Wall -Wextra -Werror -g
 
