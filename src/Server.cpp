@@ -281,127 +281,127 @@ void Server::setup_signal_handlers()
 // 	_clients.at(fd).send(text);
 // }
 
-int Server::parse_pass(int fd, const ParsedMessage& msg)
-{
-	for (const auto& param : msg.params)
-	{
-		std::cout << param << " ";
-	}
-	std::cout << std::endl;
+// int Server::parse_pass(int fd, const ParsedMessage& msg)
+// {
+// 	for (const auto& param : msg.params)
+// 	{
+// 		std::cout << param << " ";
+// 	}
+// 	std::cout << std::endl;
 
-	Client& client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
+// 	Client& client = _clients.at(fd);
+// 	std::string nickname = client.get_nickname();
 
-	if (client.get_passed_pass())
-	{
-		try
-		{
-			send_reply(fd, 462, { nickname, "PASS" }, "You may not reregister");
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-		return 0;
-	}
+// 	if (client.get_passed_pass())
+// 	{
+// 		try
+// 		{
+// 			send_reply(fd, 462, { nickname, "PASS" }, "You may not reregister");
+// 		}
+// 		catch (const std::exception& e)
+// 		{
+// 			std::cerr << "Error sending message: " << e.what() << std::endl;
+// 		}
+// 		return 0;
+// 	}
 
-	if (msg.params.size() != 1 || msg.params[0].empty())
-	{
-		try
-		{
-			send_reply(fd, 461, { nickname, "PASS" }, "Not enough parameters");
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-		return 0;
-	}
+// 	if (msg.params.size() != 1 || msg.params[0].empty())
+// 	{
+// 		try
+// 		{
+// 			send_reply(fd, 461, { nickname, "PASS" }, "Not enough parameters");
+// 		}
+// 		catch (const std::exception& e)
+// 		{
+// 			std::cerr << "Error sending message: " << e.what() << std::endl;
+// 		}
+// 		return 0;
+// 	}
 
-	if (msg.params[0] != this->_password)
-	{
-		try
-		{
-			send_reply(fd, 464, { nickname, "PASS" }, "Password incorrect");
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-		return 0;
-	}
+// 	if (msg.params[0] != this->_password)
+// 	{
+// 		try
+// 		{
+// 			send_reply(fd, 464, { nickname, "PASS" }, "Password incorrect");
+// 		}
+// 		catch (const std::exception& e)
+// 		{
+// 			std::cerr << "Error sending message: " << e.what() << std::endl;
+// 		}
+// 		return 0;
+// 	}
 
-	client.set_passed_pass(msg.params[0]);
-	return 0;
-}
+// 	client.set_passed_pass(msg.params[0]);
+// 	return 0;
+// }
 
-int Server::parse_nick(int fd, const ParsedMessage& msg)
-{
-	for (const auto& param : msg.params)
-	{
-		std::cout << param << " ";
-	}
-	std::cout << std::endl;
+// int Server::parse_nick(int fd, const ParsedMessage& msg)
+// {
+// 	for (const auto& param : msg.params)
+// 	{
+// 		std::cout << param << " ";
+// 	}
+// 	std::cout << std::endl;
 
-	Client& client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
+// 	Client& client = _clients.at(fd);
+// 	std::string nickname = client.get_nickname();
 
-	if (msg.params.empty() || msg.params[0].empty())
-    {
-		try
-		{
-			send_reply(fd, 431, { nickname, "NICK" }, "No nickname given");
-		}
-		catch(const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-        return 0;
-    }
-	std::string nick = msg.params[0];
-    if (!nick.empty() && nick[0] == ':') {
-        nick.erase(0, 1);
-	}
+// 	if (msg.params.empty() || msg.params[0].empty())
+//     {
+// 		try
+// 		{
+// 			send_reply(fd, 431, { nickname, "NICK" }, "No nickname given");
+// 		}
+// 		catch(const std::exception& e)
+// 		{
+// 			std::cerr << "Error sending message: " << e.what() << std::endl;
+// 		}
+//         return 0;
+//     }
+// 	std::string nick = msg.params[0];
+//     if (!nick.empty() && nick[0] == ':') {
+//         nick.erase(0, 1);
+// 	}
 
-	if (![](const std::string &s)
-		{ return !s.empty() &&
-				 std::all_of(s.begin(), s.end(),
-							 [](unsigned char c)
-							 { return std::isalnum(c); }); }(nick))
-	{
-		try
-		{
-			send_reply(fd, 432, { nickname, "NICK" }, "Erroneous nickname");
-		}
-		catch (const std::exception &e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-		return 0;
-	}
+// 	if (![](const std::string &s)
+// 		{ return !s.empty() &&
+// 				 std::all_of(s.begin(), s.end(),
+// 							 [](unsigned char c)
+// 							 { return std::isalnum(c); }); }(nick))
+// 	{
+// 		try
+// 		{
+// 			send_reply(fd, 432, { nickname, "NICK" }, "Erroneous nickname");
+// 		}
+// 		catch (const std::exception &e)
+// 		{
+// 			std::cerr << "Error sending message: " << e.what() << std::endl;
+// 		}
+// 		return 0;
+// 	}
 
-	if (is_duplicate_nickname(nick))
-    {
-		try
-		{
-			send_reply(fd, 433, { nickname, "NICK" }, "Nickname is already in use");
-		}
-		catch(const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-		}
-        return 0;
-    }
-	std::string old = client.get_nickname();
-    client.set_passed_nick(nick);
-	if (!old.empty() && old != "anonymous" && old != nick)
-    {
-        std::string text = old + " is now known as " + nick;
-		broadcast_to_all(text, fd);
-    }
-    std::cout << GREEN << "Client FD " << fd << " set nickname to " << nick << ".\n" << RESET;
-    return (0);
-}
+// 	if (is_duplicate_nickname(nick))
+//     {
+// 		try
+// 		{
+// 			send_reply(fd, 433, { nickname, "NICK" }, "Nickname is already in use");
+// 		}
+// 		catch(const std::exception& e)
+// 		{
+// 			std::cerr << "Error sending message: " << e.what() << std::endl;
+// 		}
+//         return 0;
+//     }
+// 	std::string old = client.get_nickname();
+//     client.set_passed_nick(nick);
+// 	if (!old.empty() && old != "anonymous" && old != nick)
+//     {
+//         std::string text = old + " is now known as " + nick;
+// 		broadcast_to_all(text, fd);
+//     }
+//     std::cout << GREEN << "Client FD " << fd << " set nickname to " << nick << ".\n" << RESET;
+//     return (0);
+// }
 
 void Server::broadcast_to_all(const std::string& message, int sender_fd)
 {
@@ -422,71 +422,71 @@ void Server::broadcast_to_all(const std::string& message, int sender_fd)
 	}
 }
 
-int Server::parse_user(int fd, const ParsedMessage& msg)
-{
-	for (const auto& param : msg.params)
-	{
-		std::cout << param << " ";
-	}
-	std::cout << std::endl;
+// int Server::parse_user(int fd, const ParsedMessage& msg)
+// {
+// 	for (const auto& param : msg.params)
+// 	{
+// 		std::cout << param << " ";
+// 	}
+// 	std::cout << std::endl;
 
-	Client& client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
-	if (client.get_passed_user())
-    {
-        try
-		{
-            send_reply(fd, 462, { nickname, "USER" }, "You may not reregister");
-        }
-		catch (const std::exception& e)
-		{
-            std::cerr << "Error sending message: " << e.what() << '\n';
-        }
-        return 0;
-    }
-    if (msg.params.size() < 4)
-    {
-        try
-		{
-            send_reply(fd, 461, { nickname, "USER" }, "Not enough parameters");
-        }
-		catch (const std::exception& e)
-		{
-            std::cerr << "Error sending message: " << e.what() << '\n';
-        }
-        return 0;
-    }
-	const std::string& username = msg.params[0];
-    const std::string& hostname = msg.params[1];
-    const std::string& servername = msg.params[2];
-    std::string  realname = msg.params[3];
-	if (!realname.empty() && realname[0] == ':')
-		realname.erase(0, 1);
+// 	Client& client = _clients.at(fd);
+// 	std::string nickname = client.get_nickname();
+// 	if (client.get_passed_user())
+//     {
+//         try
+// 		{
+//             send_reply(fd, 462, { nickname, "USER" }, "You may not reregister");
+//         }
+// 		catch (const std::exception& e)
+// 		{
+//             std::cerr << "Error sending message: " << e.what() << '\n';
+//         }
+//         return 0;
+//     }
+//     if (msg.params.size() < 4)
+//     {
+//         try
+// 		{
+//             send_reply(fd, 461, { nickname, "USER" }, "Not enough parameters");
+//         }
+// 		catch (const std::exception& e)
+// 		{
+//             std::cerr << "Error sending message: " << e.what() << '\n';
+//         }
+//         return 0;
+//     }
+// 	const std::string& username = msg.params[0];
+//     const std::string& hostname = msg.params[1];
+//     const std::string& servername = msg.params[2];
+//     std::string  realname = msg.params[3];
+// 	if (!realname.empty() && realname[0] == ':')
+// 		realname.erase(0, 1);
 
-	if (username.empty() ||
-		hostname != "0" ||
-		servername != "*" ||
-		username.find_first_of(" \t\r\n\v\f") != std::string::npos ||
-		!std::all_of(username.begin(), username.end(),
-					 [](unsigned char c)
-					 { return std::isalnum(c); }))
-	{
-		try
-		{
-			send_reply(fd, 461, { nickname, "USER" }, "Invalid USER format. Use: USER <username> 0 * :realname");
-		}
-		catch (const std::exception &e)
-		{
-			std::cerr << "Error sending message: " << e.what() << '\n';
-		}
-		return 0;
-	}
+// 	if (username.empty() ||
+// 		hostname != "0" ||
+// 		servername != "*" ||
+// 		username.find_first_of(" \t\r\n\v\f") != std::string::npos ||
+// 		!std::all_of(username.begin(), username.end(),
+// 					 [](unsigned char c)
+// 					 { return std::isalnum(c); }))
+// 	{
+// 		try
+// 		{
+// 			send_reply(fd, 461, { nickname, "USER" }, "Invalid USER format. Use: USER <username> 0 * :realname");
+// 		}
+// 		catch (const std::exception &e)
+// 		{
+// 			std::cerr << "Error sending message: " << e.what() << '\n';
+// 		}
+// 		return 0;
+// 	}
 
-	client.set_passed_user(username);
-    client.set_passed_realname(realname);
-    std::cout << GREEN << "Client FD " << fd << " set user to " << username << " with real name: " << realname << ".\n" << RESET;
-    return (0);
-}
+// 	client.set_passed_user(username);
+//     client.set_passed_realname(realname);
+//     std::cout << GREEN << "Client FD " << fd << " set user to " << username << " with real name: " << realname << ".\n" << RESET;
+//     return (0);
+// }
 
 int Server::handle_mode(int fd, const ParsedMessage& msg)
 {

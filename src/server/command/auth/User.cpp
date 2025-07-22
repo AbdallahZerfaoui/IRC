@@ -1,0 +1,69 @@
+#include "Server.hpp"
+#include "ParsedMessage.hpp"
+
+
+int Server::parse_user(int fd, const ParsedMessage& msg)
+{
+	for (const auto& param : msg.params)
+	{
+		std::cout << param << " ";
+	}
+	std::cout << std::endl;
+
+	Client& client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
+	if (client.get_passed_user())
+    {
+        try
+		{
+            send_reply(fd, 462, { nickname, "USER" }, "You may not reregister");
+        }
+		catch (const std::exception& e)
+		{
+            std::cerr << "Error sending message: " << e.what() << '\n';
+        }
+        return 0;
+    }
+    if (msg.params.size() < 4)
+    {
+        try
+		{
+            send_reply(fd, 461, { nickname, "USER" }, "Not enough parameters");
+        }
+		catch (const std::exception& e)
+		{
+            std::cerr << "Error sending message: " << e.what() << '\n';
+        }
+        return 0;
+    }
+	const std::string& username = msg.params[0];
+    const std::string& hostname = msg.params[1];
+    const std::string& servername = msg.params[2];
+    std::string  realname = msg.params[3];
+	if (!realname.empty() && realname[0] == ':')
+		realname.erase(0, 1);
+
+	if (username.empty() ||
+		hostname != "0" ||
+		servername != "*" ||
+		username.find_first_of(" \t\r\n\v\f") != std::string::npos ||
+		!std::all_of(username.begin(), username.end(),
+					 [](unsigned char c)
+					 { return std::isalnum(c); }))
+	{
+		try
+		{
+			send_reply(fd, 461, { nickname, "USER" }, "Invalid USER format. Use: USER <username> 0 * :realname");
+		}
+		catch (const std::exception &e)
+		{
+			std::cerr << "Error sending message: " << e.what() << '\n';
+		}
+		return 0;
+	}
+
+	client.set_passed_user(username);
+    client.set_passed_realname(realname);
+    std::cout << GREEN << "Client FD " << fd << " set user to " << username << " with real name: " << realname << ".\n" << RESET;
+    return (0);
+}
