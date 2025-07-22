@@ -530,54 +530,54 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 // 	return 0;
 // }
 
-int Server::handle_help(int fd, const ParsedMessage &msg)
-{
-	(void)msg;
-	Client &client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
+// int Server::handle_help(int fd, const ParsedMessage &msg)
+// {
+// 	(void)msg;
+// 	Client &client = _clients.at(fd);
+// 	std::string nickname = client.get_nickname();
 
-	send_reply(fd, 704, {nickname, "*"}, "*** Available HELP topics ***");
-	send_reply(fd, 705, {nickname, "*"}, "HELP                                                     :show this list");
-	send_reply(fd, 705, {nickname, "*"}, "CHANNELS                                                 :list channels you are in");
-	send_reply(fd, 705, {nickname, "*"}, "JOIN <#chan1,#chan2,...> <optional:key1,key2,...>        :join/create channel");
-	send_reply(fd, 705, {nickname, "*"}, "PART <#chan1,#chan2,...> <optional:leaving_message>      :leave channel");
-	send_reply(fd, 705, {nickname, "*"}, "PRIVMSG <target1,target2,...> <text>                     :send a message");
-	send_reply(fd, 705, {nickname, "*"}, "QUIT                                                     :disconnect");
-	send_reply(fd, 706, {nickname, "*"}, "*** End of HELP ***\n");
-	return 0;
-}
+// 	send_reply(fd, 704, {nickname, "*"}, "*** Available HELP topics ***");
+// 	send_reply(fd, 705, {nickname, "*"}, "HELP                                                     :show this list");
+// 	send_reply(fd, 705, {nickname, "*"}, "CHANNELS                                                 :list channels you are in");
+// 	send_reply(fd, 705, {nickname, "*"}, "JOIN <#chan1,#chan2,...> <optional:key1,key2,...>        :join/create channel");
+// 	send_reply(fd, 705, {nickname, "*"}, "PART <#chan1,#chan2,...> <optional:leaving_message>      :leave channel");
+// 	send_reply(fd, 705, {nickname, "*"}, "PRIVMSG <target1,target2,...> <text>                     :send a message");
+// 	send_reply(fd, 705, {nickname, "*"}, "QUIT                                                     :disconnect");
+// 	send_reply(fd, 706, {nickname, "*"}, "*** End of HELP ***\n");
+// 	return 0;
+// }
 
-int Server::handle_channels(int fd, const ParsedMessage& msg)
-{
-	(void)msg;
-	Client &client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
+// int Server::handle_channels(int fd, const ParsedMessage& msg)
+// {
+// 	(void)msg;
+// 	Client &client = _clients.at(fd);
+// 	std::string nickname = client.get_nickname();
 
-	try
-	{
-		std::string list;
-		for (const auto& channel : _channels)
-		{
-			if (channel.second.get_members().count(fd))
-			{
-				std::cout << "Client " << nickname << " is in channel: " << channel.first << std::endl;
-				// list + '#' + channel.first + ' ';
-			}
-		}
-		if (list.empty())
-		{
-			list = "None";
-		}
-		send_reply(fd, 705, { nickname, "CHANNELS" }, list);
+// 	try
+// 	{
+// 		std::string list;
+// 		for (const auto& channel : _channels)
+// 		{
+// 			if (channel.second.get_members().count(fd))
+// 			{
+// 				std::cout << "Client " << nickname << " is in channel: " << channel.first << std::endl;
+// 				// list + '#' + channel.first + ' ';
+// 			}
+// 		}
+// 		if (list.empty())
+// 		{
+// 			list = "None";
+// 		}
+// 		send_reply(fd, 705, { nickname, "CHANNELS" }, list);
 
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << "Error sending message: " << e.what() << std::endl;
-		return 0;
-	}
-	return 0;
-}
+// 	}
+// 	catch (const std::exception& e)
+// 	{
+// 		std::cerr << "Error sending message: " << e.what() << std::endl;
+// 		return 0;
+// 	}
+// 	return 0;
+// }
 
 // int Server::handle_join(int fd, const ParsedMessage& msg)
 // {
@@ -761,12 +761,12 @@ int Server::find_fd_by_nickname(std::string const &nickname) const
 // 	return 0;
 // }
 
-int Server::handle_quit(int fd, const ParsedMessage& msg)
-{
-	(void)fd;
-	(void)msg;
-	return -1;
-}
+// int Server::handle_quit(int fd, const ParsedMessage& msg)
+// {
+// 	(void)fd;
+// 	(void)msg;
+// 	return -1;
+// }
 
 // int Server::handle_client_command(size_t &index, int client_fd, const ParsedMessage& parsedmsg)
 // {
