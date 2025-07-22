@@ -53,7 +53,7 @@ public:
 	bool get_passed_user() const;
 	bool get_passed_realname() const;
 
-	std::string const &get_nickname() const;
+	std::string const get_nickname() const;
 	void set_passed_pass(std::string const &pass);
 	void set_passed_nick(std::string const &nick);
 	void set_passed_user(std::string const &user);
@@ -65,7 +65,7 @@ public:
 	// std::string const &get_read_buffer() const;
 	// std::string const &get_write_buffer() const;
 
-	void send(std::string const &msg); // Append data to the input_buffer to send to the client
+	void send(std::string &msg); // Append data to the input_buffer to send to the client
 	void write_output_buffer(std::string const &data); // Append data to the output_buffer to send to the server
 	std::string extract_output_line();
 };

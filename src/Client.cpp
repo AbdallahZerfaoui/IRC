@@ -27,9 +27,9 @@ bool Client::is_authenticated() const
 	return authenticated;
 }
 
-std::string const &Client::get_nickname() const
+std::string const Client::get_nickname() const
 {
-	return _nickname;
+	return _nickname.empty() ? "anonymous" : _nickname;
 }
 
 void Client::set_passed_pass(std::string const &pass)
@@ -79,7 +79,7 @@ bool Client::get_passed_realname() const
 }
 
 // Send data to the client
-void Client::send(std::string const &msg)
+void Client::send(std::string &msg)
 {
     ssize_t bytes_sent = ::send(_socket->get_fd(), msg.c_str(), msg.size(), 0);
     if (bytes_sent == -1)
@@ -121,5 +121,5 @@ std::string Client::extract_output_line()
 	output_buffer.erase(0, pos + 1);
 	if (!line.empty() && line.back() == '\r')
 		line.pop_back();
-	return line;
+	return (line + "\r\n"); // Return the line with CRLF
 }
