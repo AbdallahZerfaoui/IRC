@@ -359,14 +359,15 @@ int Server::parse_nick(int fd, const ParsedMessage& msg)
         return 0;
     }
 	std::string nick = msg.params[0];
-    if (!nick.empty() && nick[0] == ':')
+    if (!nick.empty() && nick[0] == ':') {
         nick.erase(0, 1);
+	}
 
 	if (![](const std::string &s)
 		{ return !s.empty() &&
 				 std::all_of(s.begin(), s.end(),
 							 [](unsigned char c)
-							 { return std::isalnum(c); }); })
+							 { return std::isalnum(c); }); }(nick))
 	{
 		try
 		{
@@ -559,7 +560,8 @@ int Server::handle_channels(int fd, const ParsedMessage& msg)
 		{
 			if (channel.second.get_members().count(fd))
 			{
-				list + '#' + channel.first + ' ';
+				std::cout << "Client " << nickname << " is in channel: " << channel.first << std::endl;
+				// list + '#' + channel.first + ' ';
 			}
 		}
 		if (list.empty())
@@ -662,9 +664,10 @@ int Server::handle_part(int fd, const ParsedMessage& msg)
 
     std::vector<std::string> chans = split(msg.params[0], ',');
 	std::string reason = (msg.params.size() == 2) ? msg.params[1] : "Leaving the channel";
-    if (!reason.empty() && reason[0] == ':')
+    if (!reason.empty() && reason[0] == ':') {
         reason.erase(0,1);
-	
+	}
+
 	for (size_t i = 0; i < chans.size(); ++i)
 	{
 		if (chans[i].empty() || chans[i][0] != '#')
@@ -717,10 +720,10 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
 
 	std::vector<std::string> targets = split(msg.params[0], ',');
     std::string text = msg.params[1];
-    if (!text.empty() && text[0] == ':')
+    if (!text.empty() && text[0] == ':') {
         text.erase(0, 1);
+	}
 
-	
 	for (size_t i = 0; i < targets.size(); ++i)
     {
         if (!targets[i].empty() && targets[i][0] == '#')
