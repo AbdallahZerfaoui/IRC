@@ -509,26 +509,26 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	return 0;
 }
 
-int Server::handle_kick(int fd, const ParsedMessage& msg)
-{
-	(void)msg;
-	(void)fd;
-	return 0;
-}
+// int Server::handle_kick(int fd, const ParsedMessage& msg)
+// {
+// 	(void)msg;
+// 	(void)fd;
+// 	return 0;
+// }
 
-int Server::handle_invite(int fd, const ParsedMessage& msg)
-{
-	(void)msg;
-	(void)fd;
-	return 0;
-}
+// int Server::handle_invite(int fd, const ParsedMessage& msg)
+// {
+// 	(void)msg;
+// 	(void)fd;
+// 	return 0;
+// }
 
-int Server::handle_topic(int fd, const ParsedMessage& msg)
-{
-	(void)msg;
-	(void)fd;
-	return 0;
-}
+// int Server::handle_topic(int fd, const ParsedMessage& msg)
+// {
+// 	(void)msg;
+// 	(void)fd;
+// 	return 0;
+// }
 
 int Server::handle_help(int fd, const ParsedMessage &msg)
 {
@@ -579,124 +579,124 @@ int Server::handle_channels(int fd, const ParsedMessage& msg)
 	return 0;
 }
 
-int Server::handle_join(int fd, const ParsedMessage& msg)
-{
-	Client &client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
+// int Server::handle_join(int fd, const ParsedMessage& msg)
+// {
+// 	Client &client = _clients.at(fd);
+// 	std::string nickname = client.get_nickname();
 
-	if (msg.params.empty() || msg.params.size() > 2)
-	{
-		send_reply(fd, 461, { nickname, "JOIN" }, "Wrong number of parameters");
-		return 0;
-	}
+// 	if (msg.params.empty() || msg.params.size() > 2)
+// 	{
+// 		send_reply(fd, 461, { nickname, "JOIN" }, "Wrong number of parameters");
+// 		return 0;
+// 	}
 
-	std::vector<std::string> chans = split(msg.params[0], ',');
-	std::vector<std::string> keys = (msg.params.size() > 1) ? split(msg.params[1], ',') : std::vector<std::string>();
+// 	std::vector<std::string> chans = split(msg.params[0], ',');
+// 	std::vector<std::string> keys = (msg.params.size() > 1) ? split(msg.params[1], ',') : std::vector<std::string>();
 
-	std::string chan;
-	for (size_t i = 0; i < chans.size(); ++i)
-	{
-		if (chans[i].empty() || chans[i][0] != '#')
-		{
-			send_reply(fd, 476, { nickname, "JOIN" }, "Bad channel name");
-			continue;
-		}
-		chan = chans[i].substr(1); // Remove the '#' character
-		std::string key = (i < keys.size()) ? keys[i] : "";
+// 	std::string chan;
+// 	for (size_t i = 0; i < chans.size(); ++i)
+// 	{
+// 		if (chans[i].empty() || chans[i][0] != '#')
+// 		{
+// 			send_reply(fd, 476, { nickname, "JOIN" }, "Bad channel name");
+// 			continue;
+// 		}
+// 		chan = chans[i].substr(1); // Remove the '#' character
+// 		std::string key = (i < keys.size()) ? keys[i] : "";
 
-		// Add the channel to the channels map, if it doesn't exist
-		if (!_channels.count(chan))
-			_channels.emplace(chan, Channel(chan, _clients));
+// 		// Add the channel to the channels map, if it doesn't exist
+// 		if (!_channels.count(chan))
+// 			_channels.emplace(chan, Channel(chan, _clients));
 
-		// If the channel requires a key and the key is not provided or incorrect
-		if (_channels.at(chan).requires_key() && (key.empty() || key != _channels.at(chan).get_channel_key()))
-		{
-			send_reply(fd, 475, { nickname, chans[i] }, "Cannot join, bad key");
-			continue;
-		}
+// 		// If the channel requires a key and the key is not provided or incorrect
+// 		if (_channels.at(chan).requires_key() && (key.empty() || key != _channels.at(chan).get_channel_key()))
+// 		{
+// 			send_reply(fd, 475, { nickname, chans[i] }, "Cannot join, bad key");
+// 			continue;
+// 		}
 
-		// Add the client to the channel
-		_channels.at(chan).add_client(fd);
-		try
-		{
-			send_reply(fd, 476, { nickname }, "You have joined the channel " + chan);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Error sending message: " << e.what() << std::endl;
-			return 0;
-		}
-		// Notify other clients in the channel (forward a message to all other clients in the channel
-		std::string message = ':' + _clients.at(fd).get_nickname() + "@host PRIVMSG #" + _channels.at(chan).get_name() + " :" + " has joined the channel" + "\r\n";
-		_channels.at(chan).broadcast_message(message, fd);
+// 		// Add the client to the channel
+// 		_channels.at(chan).add_client(fd);
+// 		try
+// 		{
+// 			send_reply(fd, 476, { nickname }, "You have joined the channel " + chan);
+// 		}
+// 		catch (const std::exception& e)
+// 		{
+// 			std::cerr << "Error sending message: " << e.what() << std::endl;
+// 			return 0;
+// 		}
+// 		// Notify other clients in the channel (forward a message to all other clients in the channel
+// 		std::string message = ':' + _clients.at(fd).get_nickname() + "@host PRIVMSG #" + _channels.at(chan).get_name() + " :" + " has joined the channel" + "\r\n";
+// 		_channels.at(chan).broadcast_message(message, fd);
 
-		if (_channels.at(chan).get_members().size() == 1)
-		{
-			// Make the client an operator if they are the first to join the channel
-			_channels.at(chan).add_operator(fd);
-			try
-			{
-				send_reply(fd, 705, { nickname, "JOIN", "#" + chan }, "You are now an operator of the channel");
-			}
-			catch (const std::exception& e)
-			{
-				std::cerr << "Error sending message: " << e.what() << std::endl;
-				return 0;
-			}
-			// Notify other clients in the channel that the client is now an operator
-			std::string message = ':' + _hostname + "MODE #" + _channels.at(chan).get_name() + " +o" + client.get_nickname() + "\r\n";
-			_channels.at(chan).broadcast_message(message, -1);
-		}
-	}
-	return 0;
-}
+// 		if (_channels.at(chan).get_members().size() == 1)
+// 		{
+// 			// Make the client an operator if they are the first to join the channel
+// 			_channels.at(chan).add_operator(fd);
+// 			try
+// 			{
+// 				send_reply(fd, 705, { nickname, "JOIN", "#" + chan }, "You are now an operator of the channel");
+// 			}
+// 			catch (const std::exception& e)
+// 			{
+// 				std::cerr << "Error sending message: " << e.what() << std::endl;
+// 				return 0;
+// 			}
+// 			// Notify other clients in the channel that the client is now an operator
+// 			std::string message = ':' + _hostname + "MODE #" + _channels.at(chan).get_name() + " +o" + client.get_nickname() + "\r\n";
+// 			_channels.at(chan).broadcast_message(message, -1);
+// 		}
+// 	}
+// 	return 0;
+// }
 
-int Server::handle_part(int fd, const ParsedMessage& msg)
-{
-	Client &client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
+// int Server::handle_part(int fd, const ParsedMessage& msg)
+// {
+// 	Client &client = _clients.at(fd);
+// 	std::string nickname = client.get_nickname();
 
-    if (msg.params.empty() || msg.params.size() > 2)
-    {
-        send_reply(fd, 461, { nickname, "PART" }, "Wrong number of parameters");
-        return 0;
-    }
+//     if (msg.params.empty() || msg.params.size() > 2)
+//     {
+//         send_reply(fd, 461, { nickname, "PART" }, "Wrong number of parameters");
+//         return 0;
+//     }
 
-    std::vector<std::string> chans = split(msg.params[0], ',');
-	std::string reason = (msg.params.size() == 2) ? msg.params[1] : "Leaving the channel";
-    if (!reason.empty() && reason[0] == ':') {
-        reason.erase(0,1);
-	}
+//     std::vector<std::string> chans = split(msg.params[0], ',');
+// 	std::string reason = (msg.params.size() == 2) ? msg.params[1] : "Leaving the channel";
+//     if (!reason.empty() && reason[0] == ':') {
+//         reason.erase(0,1);
+// 	}
 
-	for (size_t i = 0; i < chans.size(); ++i)
-	{
-		if (chans[i].empty() || chans[i][0] != '#')
-        {
-            send_reply(fd, 476, { nickname, "PART" }, "Bad channel mask");
-            continue;
-        }
-		chans[i].erase(0, 1); // Remove the '#' character
+// 	for (size_t i = 0; i < chans.size(); ++i)
+// 	{
+// 		if (chans[i].empty() || chans[i][0] != '#')
+//         {
+//             send_reply(fd, 476, { nickname, "PART" }, "Bad channel mask");
+//             continue;
+//         }
+// 		chans[i].erase(0, 1); // Remove the '#' character
 
-		auto it = _channels.find(chans[i]);
-		if (it == _channels.end())
-		{
-			send_reply(fd, 403, { nickname, "PART", "#" + chans[i] }, "No such channel");
-			continue ;
-		}
+// 		auto it = _channels.find(chans[i]);
+// 		if (it == _channels.end())
+// 		{
+// 			send_reply(fd, 403, { nickname, "PART", "#" + chans[i] }, "No such channel");
+// 			continue ;
+// 		}
 
-		if (!it->second.remove_client(fd))
-		{
-			send_reply(fd, 442, { nickname, "PART", "#" + chans[i] }, "You're not on that channel");
-			continue ;
-		}
-		std::string message = ':' + _clients.at(fd).get_nickname() + "@host PRIVMSG #" + _channels.at(chans[i]).get_name() + " :" + reason + "\r\n";
-		_channels.at(chans[i]).broadcast_message(message, fd);
+// 		if (!it->second.remove_client(fd))
+// 		{
+// 			send_reply(fd, 442, { nickname, "PART", "#" + chans[i] }, "You're not on that channel");
+// 			continue ;
+// 		}
+// 		std::string message = ':' + _clients.at(fd).get_nickname() + "@host PRIVMSG #" + _channels.at(chans[i]).get_name() + " :" + reason + "\r\n";
+// 		_channels.at(chans[i]).broadcast_message(message, fd);
 
-		if (it->second.get_members().empty())
-			_channels.erase(it);
-	}
-	return 0;
-}
+// 		if (it->second.get_members().empty())
+// 			_channels.erase(it);
+// 	}
+// 	return 0;
+// }
 
 int Server::find_fd_by_nickname(std::string const &nickname) const
 {
