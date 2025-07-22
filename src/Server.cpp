@@ -49,43 +49,43 @@ const std::unordered_map<std::string, Server::CommandHandler> Server::handlers =
 };
 
 // Helper functions
-bool Server::is_duplicate_nickname(const std::string& nickname)
-{
-	// Check if the nickname is already taken by another client
-	for (const auto& client : _clients)
-	{
-		if (client.second.get_nickname() == nickname)
-		{
-			return true;
-		}
-	}
-	return false;
-}
+// bool Server::is_duplicate_nickname(const std::string& nickname)
+// {
+// 	// Check if the nickname is already taken by another client
+// 	for (const auto& client : _clients)
+// 	{
+// 		if (client.second.get_nickname() == nickname)
+// 		{
+// 			return true;
+// 		}
+// 	}
+// 	return false;
+// }
 
-std::vector<std::string> Server::split(const std::string& str, char delimiter)
-{
-	std::vector<std::string> tokens;
-	std::string token;
-	std::istringstream tokenStream(str);
-	while (std::getline(tokenStream, token, delimiter))
-	{
-		tokens.push_back(token);
-	}
-	return tokens;
-}
+// std::vector<std::string> Server::split(const std::string& str, char delimiter)
+// {
+// 	std::vector<std::string> tokens;
+// 	std::string token;
+// 	std::istringstream tokenStream(str);
+// 	while (std::getline(tokenStream, token, delimiter))
+// 	{
+// 		tokens.push_back(token);
+// 	}
+// 	return tokens;
+// }
 
-bool Server::valid_inputs(int port, const std::string& password)
-{
-	if (port <= 0 || port > MAX_PORT_NBR) {
-		std::cerr << "Error: Invalid port number." << std::endl;
-		return false;
-	}
-	if (password.empty()) {
-		std::cerr << "Error: Empty password provided." << std::endl;
-		return false;
-	}
-	return true;
-}
+// bool Server::valid_inputs(int port, const std::string& password)
+// {
+// 	if (port <= 0 || port > MAX_PORT_NBR) {
+// 		std::cerr << "Error: Invalid port number." << std::endl;
+// 		return false;
+// 	}
+// 	if (password.empty()) {
+// 		std::cerr << "Error: Empty password provided." << std::endl;
+// 		return false;
+// 	}
+// 	return true;
+// }
 
 // a helper function that generate a sockaddr_in structure, fill it and returns it
 sockaddr_in Server::create_sockaddr_in(int port)
@@ -268,18 +268,18 @@ void Server::setup_signal_handlers()
 // 	std::cout << GREEN << "Client removed from poll list." << RESET << std::endl;
 // }
 
-void Server::send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg)
-{
-	std::string text = ':' + _hostname + ' ' + std::to_string(code) + ' ';
-    for (size_t i = 0; i < params.size(); ++i)
-	{
-        if (i)
-			text += ' ';
-		text += params[i];
-    }
-    text += " :" + msg + "\r\n";
-	_clients.at(fd).send(text);
-}
+// void Server::send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg)
+// {
+// 	std::string text = ':' + _hostname + ' ' + std::to_string(code) + ' ';
+//     for (size_t i = 0; i < params.size(); ++i)
+// 	{
+//         if (i)
+// 			text += ' ';
+// 		text += params[i];
+//     }
+//     text += " :" + msg + "\r\n";
+// 	_clients.at(fd).send(text);
+// }
 
 int Server::parse_pass(int fd, const ParsedMessage& msg)
 {
