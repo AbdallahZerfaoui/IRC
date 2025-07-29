@@ -37,7 +37,7 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
                 continue;
             }
 
-			std::string message1 = ':' + _clients.at(fd).get_nickname() + "@host PRIVMSG #" + _channels.at(chan).get_name() + " :" + text + "\r\n";
+			std::string message1 = ':' + _clients.at(fd).get_nickname() + "!user@host PRIVMSG #" + _channels.at(chan).get_name() + " :" + text + "\r\n";
             ch.broadcast_message(message1, fd);
             continue;
         }
@@ -49,8 +49,8 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
 			continue ;
 		}
 
-		std::string message = ':' + client.get_nickname() + "@host PRIVMSG " + targets[i] + " :" + text + "\r\n";
-		client.send(message);
+		std::string message = ':' + client.get_nickname() + "!user@host PRIVMSG " + targets[i] + " :" + text + "\r\n";
+		_clients.at(fdtg).send(message);
 	}
 	return 0;
 }

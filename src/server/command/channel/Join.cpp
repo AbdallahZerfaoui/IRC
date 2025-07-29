@@ -31,6 +31,13 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		if (!_channels.count(chan))
 			_channels.emplace(chan, Channel(chan, _clients));
 
+        // if the channel already exists and the client is already a member
+        if (_channels.at(chan).has_member(fd))
+        {
+            send_reply(fd, 443, { nickname, chan }, "You are already on that channel");
+            continue;
+        }
+
 		// If the channel requires a key and the key is not provided or incorrect
 		if (_channels.at(chan).requires_key() && (key.empty() || key != _channels.at(chan).get_channel_key()))
 		{
@@ -38,7 +45,22 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 			continue;
 		}
 
-		// Add the client to the channel
+        // If the channel has a user limit and the channel is full
+        // AND the user was not invited
+        if (_channels.at(chan).get_limit() != -1 && static_cast<int>(_channels.at(chan).get_members().size()) >= _channels.at(chan).get_limit() && !_channels.at(chan).is_invited(fd))
+		{
+			send_reply(fd, 471, { nickname, chans[i] }, "Cannot join, channel is full");
+			continue;
+		}
+
+        // If the channel is invite-only and the user was not invited
+        if (_channels.at(chan).is_invite_only() && !_channels.at(chan).is_invited(fd))
+        {
+            send_reply(fd, 473, { nickname, chans[i] }, "Cannot join, channel is invite-only");
+            continue;
+        }
+
+		// Finally add the client to the channel
 		_channels.at(chan).add_client(fd);
 		try
 		{
@@ -67,7 +89,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 				return 0;
 			}
 			// Notify other clients in the channel that the client is now an operator
-			std::string message = ':' + _hostname + "MODE #" + _channels.at(chan).get_name() + " +o" + client.get_nickname() + "\r\n";
+			std::string message = ':' + _hostname + "MODE #" + _channels.at(chan).get_name() + " +o " + client.get_nickname() + "\r\n";
 			_channels.at(chan).broadcast_message(message, -1);
 		}
 	}
