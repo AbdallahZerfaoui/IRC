@@ -51,7 +51,7 @@ int Server::handle_kick(int fd, const ParsedMessage& msg)
 
 	_clients.at(target_fd).send(kick_msg);
 
-	// delete the channel if it has no members left
+	// delete the channel if it has no members left 
 	if (channel.get_members().empty())
 		_channels.erase(it);
 
