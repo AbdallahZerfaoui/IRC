@@ -8,7 +8,7 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
 	std::string nickname = client.get_nickname();
 	if (msg.params.size() < 2)
 	{
-		send_reply(fd, 411, { nickname, "PRIVMSG" }, "No recipient given");
+		send_reply(fd, ERR_NORECIPIENT, { nickname, "PRIVMSG" }, "No recipient given");
 		return 0;
 	}
 
@@ -33,7 +33,7 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
             Channel& ch = it->second;
             if (!ch.has_member(fd))
             {
-                send_reply(fd, 404, { nickname, targets[i] }, "Cannot send to channel");
+                send_reply(fd, ERR_CANNOTSENDTOCHAN, { nickname, targets[i] }, "Cannot send to channel");
                 continue;
             }
 
@@ -45,7 +45,7 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
 		int fdtg = find_fd_by_nickname(targets[i]);
 		if (fdtg == -1)
 		{
-			send_reply(fd, 401, { nickname, "PRIVMSG", targets[i] }, "No such nickname");
+			send_reply(fd, ERR_NOSUCHNICK, { nickname, "PRIVMSG", targets[i] }, "No such nickname");
 			continue ;
 		}
 

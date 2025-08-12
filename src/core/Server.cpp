@@ -22,7 +22,7 @@ Server::Server(int port, const std::string &password)
 	  _port(port),
 	  _password(password)
 {
-	char hostname_buffer[256];
+	char hostname_buffer[RPL_ADMINME];
 	if (gethostname(hostname_buffer, sizeof(hostname_buffer)) != 0)
 	{
 		throw std::runtime_error(std::string("Failed to get hostname: ") + std::strerror(errno));
@@ -124,7 +124,7 @@ void Server::broadcast_to_all(const std::string &message, int sender_fd)
 			std::string nickname = client.second.get_nickname();
 			try
 			{
-				send_reply(client.first, 462, {nickname}, message);
+				send_reply(client.first, ERR_ALREADYREGISTERED, {nickname}, message);
 			}
 			catch (const std::exception &e)
 			{
@@ -134,7 +134,7 @@ void Server::broadcast_to_all(const std::string &message, int sender_fd)
 	}
 }
 
-// MODE #channel +k 123 // set channel key to 123
+// MODE #channel +k RPL_CUSTOM123 // set channel key to RPL_CUSTOM123
 // MODE #channel -k // remove channel key
 // MODE #channel +i // set channel to invite only
 // MODE #channel -i // set channel to public
@@ -218,7 +218,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 		int target_fd = find_fd_by_nickname(param);
 		if (target_fd == -1 || !channel.has_member(target_fd))
 		{
-			send_reply(fd, 441, { nickname, param }, "Is not on that channel");
+			send_reply(fd, ERR_USERNOTINCHANNEL, { nickname, param }, "Is not on that channel");
 			return 0;
 		}
 		channel.add_operator(target_fd);
@@ -233,7 +233,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 		int target_fd = find_fd_by_nickname(param);
 		if (target_fd == -1 || !channel.has_member(target_fd))
 		{
-			send_reply(fd, 441, { nickname, param }, "Is not on that channel");
+			send_reply(fd, ERR_USERNOTINCHANNEL, { nickname, param }, "Is not on that channel");
 			return 0;
 		}
 		channel.remove_operator(target_fd);
@@ -248,7 +248,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
         int limit = std::stoi(param);
         if (limit < 0)
         {
-            send_reply(fd, 501, { nickname, "MODE" }, "Invalid limit");
+            send_reply(fd, ERR_UMODEUNKNOWNFLAG, { nickname, "MODE" }, "Invalid limit");
             return 0;
         }
         channel.set_limit(limit);
@@ -259,7 +259,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	}
 	else
 	{
-		send_reply(fd, 472, { nickname, mode }, "Unknown MODE");
+		send_reply(fd, ERR_UNKNOWNMODE, { nickname, mode }, "Unknown MODE");
 		return 0;
 	}
 

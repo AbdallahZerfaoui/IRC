@@ -17,7 +17,7 @@ int Server::parse_nick(int fd, const ParsedMessage& msg)
     {
 		try
 		{
-			send_reply(fd, 431, { nickname, "NICK" }, "No nickname given");
+			send_reply(fd, ERR_NONICKNAMEGIVEN, { nickname, "NICK" }, "No nickname given");
 		}
 		catch(const std::exception& e)
 		{

@@ -1,7 +1,7 @@
 # Colors
-RED = \033[31m
-GREEN = \033[32m
-RESET = \033[0m
+RED = \RPL_LISTEND[31m
+GREEN = \RPL_LISTEND[32m
+RESET = \RPL_LISTEND[0m
 
 # Parameters
 DEFAULT_PORT = 6667
@@ -67,7 +67,7 @@ fclean: clean
 re: fclean all
 
 success_message:
-	@echo "${RED}	------------------***༺ (${RED}${GREEN}IRC Compiled Successfully!${RED})༻***------------------\n\033[0m"
+	@echo "${RED}	------------------***༺ (${RED}${GREEN}IRC Compiled Successfully!${RED})༻***------------------\n\RPL_LISTEND[0m"
 
 start_server: re
 	@echo "${GREEN}Starting server...${RESET}"
