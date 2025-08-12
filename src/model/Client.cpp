@@ -1,13 +1,13 @@
 #include "Client.hpp"
 
-Client::Client(Client&& other) : _socket(std::move(other._socket))
+Client::Client(Client &&other) : _socket(std::move(other._socket))
 {
-
 }
 
-Client& Client::operator=(Client&& other) 
+Client &Client::operator=(Client &&other)
 {
-	if (this != &other) {
+	if (this != &other)
+	{
 		_socket = std::move(other._socket);
 	}
 	return *this;
@@ -16,7 +16,7 @@ Client& Client::operator=(Client&& other)
 // CHANGED (tobias)
 Client::Client(std::unique_ptr<Socket> socket) : _socket(std::move(socket))
 {
-    if (_socket)
+	if (_socket)
 		_socket->set_nonblocking();
 }
 
@@ -63,35 +63,42 @@ void Client::set_authenticated()
 
 bool Client::get_passed_pass() const
 {
-    return passed_pass;
+	return passed_pass;
 }
 bool Client::get_passed_nick() const
 {
-    return passed_nick;
+	return passed_nick;
 }
 bool Client::get_passed_user() const
 {
-    return passed_user;
+	return passed_user;
 }
 bool Client::get_passed_realname() const
 {
-    return passed_realname;
+	return passed_realname;
 }
 
-void Client::queue_send(const std::string& msg)
+void Client::queue_send(const std::string &msg)
 {
 	outbuf += msg;
 }
 
-bool Client::try_flush() {
-	while (!outbuf.empty()) {
+bool Client::try_flush()
+{
+	while (!outbuf.empty())
+	{
 		ssize_t n = ::send(_socket->get_fd(), outbuf.data(), outbuf.size(), 0);
-		if (n > 0) {
+		if (n > 0)
+		{
 			outbuf.erase(0, static_cast<size_t>(n));
-		} else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+		}
+		else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+		{
 			want_pollout = true;
 			return false;
-		} else {
+		}
+		else
+		{
 			std::cerr << "send() failed for client FD " << _socket->get_fd()
 					  << ": " << std::strerror(errno) << std::endl;
 			throw std::runtime_error("send() failed");
