@@ -8,7 +8,7 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty())
 	{
-		send_reply(fd, 461, { nickname, "TOPIC" }, "Not enough parameters");
+		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "TOPIC" }, "Not enough parameters");
 		return 0;
 	}
 

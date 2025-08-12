@@ -9,7 +9,7 @@ int Server::handle_ping(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty())
 	{
-		send_reply(fd, 461, { nickname, "PING" }, "Not enough parameters");
+		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "PING" }, "Not enough parameters");
 		return 0;
 	}
 

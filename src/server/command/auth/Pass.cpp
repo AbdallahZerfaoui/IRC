@@ -31,7 +31,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			send_reply(fd, 461, { nickname, "PASS" }, "Not enough parameters");
+			send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "PASS" }, "Not enough parameters");
 		}
 		catch (const std::exception& e)
 		{

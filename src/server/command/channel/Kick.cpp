@@ -8,7 +8,7 @@ int Server::handle_kick(int fd, const ParsedMessage& msg)
 
 	if (msg.params.size() < 2)
 	{
-		send_reply(fd, 461, { nickname, "KICK" }, "Not enough parameters");
+		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "KICK" }, "Not enough parameters");
 		return 0;
 	}
 

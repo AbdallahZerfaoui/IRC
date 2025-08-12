@@ -28,7 +28,7 @@ int Server::parse_user(int fd, const ParsedMessage& msg)
     {
         try
 		{
-            send_reply(fd, 461, { nickname, "USER" }, "Not enough parameters");
+            send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "USER" }, "Not enough parameters");
         }
 		catch (const std::exception& e)
 		{
@@ -53,7 +53,7 @@ int Server::parse_user(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			send_reply(fd, 461, { nickname, "USER" }, "Invalid USER format. Use: USER <username> 0 * :realname");
+			send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "USER" }, "Invalid USER format. Use: USER <username> 0 * :realname");
 		}
 		catch (const std::exception &e)
 		{

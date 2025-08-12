@@ -9,7 +9,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty() || msg.params.size() > 2)
 	{
-		send_reply(fd, 461, { nickname, "JOIN" }, "Wrong number of parameters");
+		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "JOIN" }, "Wrong number of parameters");
 		return 0;
 	}
 

@@ -20,6 +20,7 @@
 #include <sstream> // For std::istringstream
 #include <functional>
 # include "ParsedMessage.hpp"
+# include "../includes/Replies.hpp" // For reply codes
 
 // Constants
 # define DEFAULT_PORT 6667 // Default port for IRC servers

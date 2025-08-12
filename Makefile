@@ -67,7 +67,7 @@ fclean: clean
 re: fclean all
 
 success_message:
-	@echo "${RED}	------------------***༺ (${RED}${GREEN}IRC Compiled!${})༻***------------------\n\033[0m"
+	@echo "${RED}	------------------***༺ (${RED}${GREEN}IRC Compiled Successfully!${RED})༻***------------------\n\033[0m"
 
 start_server: re
 	@echo "${GREEN}Starting server...${RESET}"
