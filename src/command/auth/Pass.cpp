@@ -18,7 +18,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			send_reply(fd, 462, { nickname, "PASS" }, "You may not reregister");
+			send_reply(fd, ERR_ALREADYREGISTERED, { nickname, "PASS" }, "You may not reregister");
 		}
 		catch (const std::exception& e)
 		{
@@ -44,7 +44,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			send_reply(fd, 464, { nickname, "PASS" }, "Password incorrect");
+			send_reply(fd, ERR_PASSWDMISMATCH, { nickname, "PASS" }, "Password incorrect");
 		}
 		catch (const std::exception& e)
 		{

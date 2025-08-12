@@ -14,7 +14,7 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 
 	if (parsedmsg.command != "PASS" && !client.get_passed_pass())
     {
-        send_reply(client_fd, 451, { nickname }, "You have not registered");
+        send_reply(client_fd, ERR_USERNOTINCHANNEL, { nickname }, "You have not registered");
         return 0;
     }
 
@@ -23,14 +23,14 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 		parsedmsg.command != "NICK" &&
 		parsedmsg.command != "USER")
 	{
-		send_reply(client_fd, 451, { nickname }, "You have not registered");
+		send_reply(client_fd, ERR_USERNOTINCHANNEL, { nickname }, "You have not registered");
 		return 0;
 	}
 
 	auto it = handlers.find(parsedmsg.command);
     if (it == handlers.end())
     {
-        send_reply(client_fd, 421, { nickname, parsedmsg.command }, "Unknown command");
+        send_reply(client_fd, ERR_UNKNOWNCOMMAND, { nickname, parsedmsg.command }, "Unknown command");
         return 0;
     }
     if (it->second(*this, client_fd, parsedmsg) == -1)
@@ -48,7 +48,7 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 		std::string nick_for_welcome = client.get_nickname();
 		if (nick_for_welcome.empty()) nick_for_welcome = "*";
 
-		send_reply(client_fd, 1, { nick_for_welcome },
+		send_reply(client_fd, RPL_WELCOME, { nick_for_welcome },
 				   "Welcome to ft_irc, " + client.get_nickname());
 
 		handle_help(client_fd, ParsedMessage(""));

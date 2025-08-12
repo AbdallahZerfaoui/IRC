@@ -24,7 +24,7 @@ void Server::handle_new_connection()
 	_pollfds.push_back({client_fd, POLLIN, 0});
 	try
 	{	
-		send_reply(client_fd, 704, { _clients.at(client_fd).get_nickname(), "*" }, "*** Available Commands ***");
+		send_reply(client_fd, RPL_HELPSTART, { _clients.at(client_fd).get_nickname(), "*" }, "*** Available Commands ***");
 		send_reply(client_fd, RPL_YOUREOPER, { _clients.at(client_fd).get_nickname(), "*" }, "PASS <password>");
 		send_reply(client_fd, RPL_YOUREOPER, { _clients.at(client_fd).get_nickname(), "*" }, "NICK <nickname>");
 		send_reply(client_fd, RPL_YOUREOPER, { _clients.at(client_fd).get_nickname(), "*" }, "USER <username> 0 * :realname\n");

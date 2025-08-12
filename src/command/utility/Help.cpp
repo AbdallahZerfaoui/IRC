@@ -8,7 +8,7 @@ int Server::handle_help(int fd, const ParsedMessage &msg)
 	Client &client = _clients.at(fd);
 	std::string nickname = client.get_nickname();
 
-	send_reply(fd, 704, {nickname, "*"}, "*** Available HELP topics ***");
+	send_reply(fd, RPL_HELPSTART, {nickname, "*"}, "*** Available HELP topics ***");
 	send_reply(fd, RPL_YOUREOPER, {nickname, "*"}, "HELP                                                     :show this list");
 	send_reply(fd, RPL_YOUREOPER, {nickname, "*"}, "CHANNELS                                                 :list channels you are in");
 	send_reply(fd, RPL_YOUREOPER, {nickname, "*"}, "JOIN <#chan1,#chan2,...> <optional:key1,key2,...>        :join/create channel");
@@ -27,6 +27,6 @@ int Server::handle_help(int fd, const ParsedMessage &msg)
     send_reply(fd, RPL_YOUREOPER, {nickname, "*"}, "TOPIC <#channel> <new_topic>                             :get or set channel topic");
     send_reply(fd, RPL_YOUREOPER, {nickname, "*"}, "PING <server>                                            :ping the server to check connection");
     
-	send_reply(fd, 706, {nickname, "*"}, "*** End of HELP ***\n");
+	send_reply(fd, RPL_HELPTXT, {nickname, "*"}, "*** End of HELP ***\n");
 	return 0;
 }

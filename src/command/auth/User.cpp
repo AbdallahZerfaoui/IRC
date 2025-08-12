@@ -8,7 +8,7 @@ int Server::parse_user(int fd, const ParsedMessage& msg)
     if (nickname.empty()) nickname = "*";
 
     if (client.get_passed_user()) {
-        send_reply(fd, 462, { nickname, "USER" }, "You may not reregister");
+        send_reply(fd, ERR_ALREADYREGISTERED, { nickname, "USER" }, "You may not reregister");
         return 0;
     }
 

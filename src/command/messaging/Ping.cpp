@@ -16,7 +16,7 @@ int Server::handle_ping(int fd, const ParsedMessage& msg)
 	std::string target = msg.params[0];
 	if (target.empty() || target[0] != ':')
 	{
-		send_reply(fd, 409, { nickname, "PING" }, "Invalid PING format. Use: PING :target");
+		send_reply(fd, ERR_NOORIGIN, { nickname, "PING" }, "Invalid PING format. Use: PING :target");
 		return 0;
 	}
 

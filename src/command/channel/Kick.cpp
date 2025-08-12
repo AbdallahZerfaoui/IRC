@@ -40,7 +40,7 @@ int Server::handle_kick(int fd, const ParsedMessage& msg)
 	int target_fd = find_fd_by_nickname(target_nick);
 	if (target_fd == -1 || !channel.has_member(target_fd))
 	{
-		send_reply(fd, 441, { nickname, target_nick }, "Is not on that channel");
+		send_reply(fd, ERR_USERNOTINCHANNEL, { nickname, target_nick }, "Is not on that channel");
 		return 0;
 	}
 

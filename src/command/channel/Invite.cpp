@@ -39,7 +39,7 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 	int target_fd = find_fd_by_nickname(target_nick);
 	if (target_fd == -1)
 	{
-		send_reply(fd, 401, { nickname, target_nick }, "No such nick");
+		send_reply(fd, ERR_NOSUCHNICK, { nickname, target_nick }, "No such nick");
 		return 0;
 	}
 
