@@ -38,7 +38,7 @@ int Server::parse_nick(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			send_reply(fd, 432, { nickname, "NICK" }, "Erroneous nickname");
+			send_reply(fd, ERR_ERRONEUSNICKNAME, { nickname, "NICK" }, "Erroneous nickname");
 		}
 		catch (const std::exception &e)
 		{
@@ -51,7 +51,7 @@ int Server::parse_nick(int fd, const ParsedMessage& msg)
     {
 		try
 		{
-			send_reply(fd, 433, { nickname, "NICK" }, "Nickname is already in use");
+			send_reply(fd, ERR_NICKNAMEINUSE, { nickname, "NICK" }, "Nickname is already in use");
 		}
 		catch(const std::exception& e)
 		{

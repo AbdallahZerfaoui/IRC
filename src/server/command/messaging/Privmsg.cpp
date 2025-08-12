@@ -26,7 +26,7 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
             auto it = _channels.find(chan);
             if (it == _channels.end())
             {
-                send_reply(fd, 403, { nickname, targets[i] }, "No such channel");
+                send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, targets[i] }, "No such channel");
                 continue;
             }
 

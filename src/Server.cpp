@@ -162,7 +162,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		send_reply(fd, 476, { nickname, "MODE" }, "Bad channel name");
+		send_reply(fd, ERR_BADCHANMASK, { nickname, "MODE" }, "Bad channel name");
 		return 0;
 	}
 
@@ -170,20 +170,20 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		send_reply(fd, 403, { nickname, chan_name }, "No such channel");
+		send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, chan_name }, "No such channel");
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.has_member(fd))
 	{
-		send_reply(fd, 442, { nickname, chan_name }, "You're not on that channel");
+		send_reply(fd, ERR_NOTONCHANNEL, { nickname, chan_name }, "You're not on that channel");
 		return 0;
 	}
 
 	if (!channel.is_operator(fd))
 	{
-		send_reply(fd, 482, { nickname, chan_name }, "You're not channel operator");
+		send_reply(fd, ERR_CHANOPRIVSNEEDED, { nickname, chan_name }, "You're not channel operator");
 		return 0;
 	}
 

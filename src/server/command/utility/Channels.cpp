@@ -23,7 +23,7 @@ int Server::handle_channels(int fd, const ParsedMessage& msg)
 		{
 			list = "None";
 		}
-		send_reply(fd, 705, { nickname, "CHANNELS" }, list);
+		send_reply(fd, RPL_YOUREOPER, { nickname, "CHANNELS" }, list);
 
 	}
 	catch (const std::exception& e)

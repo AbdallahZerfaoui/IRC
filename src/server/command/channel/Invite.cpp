@@ -17,7 +17,7 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		send_reply(fd, 476, { nickname, "INVITE" }, "Bad channel name");
+		send_reply(fd, ERR_BADCHANMASK, { nickname, "INVITE" }, "Bad channel name");
 		return 0;
 	}
 
@@ -25,14 +25,14 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		send_reply(fd, 403, { nickname, chan_name }, "No such channel");
+		send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, chan_name }, "No such channel");
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.is_operator(fd))
 	{
-		send_reply(fd, 482, { nickname, chan_name }, "You're not channel operator");
+		send_reply(fd, ERR_CHANOPRIVSNEEDED, { nickname, chan_name }, "You're not channel operator");
 		return 0;
 	}
 
@@ -45,7 +45,7 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 
 	if (channel.has_member(target_fd))
 	{
-		send_reply(fd, 443, { nickname, target_nick, chan_name }, "User already on channel");
+		send_reply(fd, ERR_USERONCHANNEL, { nickname, target_nick, chan_name }, "User already on channel");
 		return 0;
 	}
 
