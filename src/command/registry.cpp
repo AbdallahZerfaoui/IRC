@@ -44,4 +44,7 @@ const std::unordered_map<std::string, Server::CommandHandler> Server::handlers =
 	{"TOPIC", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_topic(fd, msg);
     }},
+	{"CAP", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.handle_cap(fd, msg);
+    }},
 };

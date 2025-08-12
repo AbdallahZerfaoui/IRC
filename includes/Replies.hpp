@@ -2,7 +2,7 @@
 # define REPLIES_HPP
 
 enum ReplyCode {
-    RPL_WELCOME = 001,
+    RPL_WELCOME = 1,
     RPL_CUSTOM123 = 123,
     RPL_ADMINME = 256,
     ERR_NOSUCHNICK = 401,
