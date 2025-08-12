@@ -30,6 +30,7 @@
 class Server 
 {
 	private:
+		std::string _server_name; // The name of the server, can be used in replies
 		Socket _listening_socket; // The socket that accepts new connections
 		std::string _hostname;
 		int _port;
@@ -88,6 +89,7 @@ class Server
 		static void setup_signal_handlers();
 
 		void send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg);
+		void enable_pollout(int fd, bool enable);
 
 		// void handle_new_connection();
 		// void handle_client_data(int client_fd);

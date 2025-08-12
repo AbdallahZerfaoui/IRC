@@ -24,22 +24,26 @@ ParsedMessage::ParsedMessage(const std::string& line)
 	// Getting the command
 	ss >> command;
 
+	for (size_t i = 0; i < command.size(); ++i)
+		command[i] = std::toupper(static_cast<unsigned char>(command[i]));
+
 	// Getting the parameters
 	bool trailing = false;
-	while (ss >> token)
-	{
-		if (token[0] == ':' && !trailing) {
-			trailing = true;
-			std::string rest;
-			std::getline(ss, rest);
-			params.push_back(token.substr(1) + rest);
+    while (ss >> token) {
+        if (!trailing && !token.empty() && token[0] == ':') {
+            trailing = true;
+            std::string rest;
+            std::getline(ss, rest);
+            if (!rest.empty() && rest[0] == ' ')
+                rest.erase(0, 1);
+			std::string tail = token.substr(1);
+			if (!rest.empty()) tail += " " + rest;
+			params.push_back(tail);
 			break;
-		}
-		else
-		{
-			params.push_back(token);
-		}
-	}
+        } else {
+            params.push_back(token);
+        }
+    }
 }
 
 ParsedMessage::ParsedMessage(const std::string& p, const std::string& c, const std::vector<std::string>& ps) : prefix(p), command(c), params(ps) {}

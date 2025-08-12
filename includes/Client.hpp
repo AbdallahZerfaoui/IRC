@@ -20,9 +20,10 @@ class Client
 {
 private:
     std::unique_ptr<Socket> _socket;
-	std::string input_buffer = ""; // When the server sends data to the client, it is stored here
-    std::string output_buffer = ""; // When the client sends data to the server, it is stored here
-
+	std::string outbuf = ""; // When the server sends data to the client, it is stored here
+    std::string recv_buffer = ""; // When the client sends data to the server, it is stored here
+	bool want_pollout = false;
+	
 	// Authentication data
 	std::string _nickname = ""; // from NICK
 	std::string _username = ""; // from USER
@@ -68,6 +69,8 @@ public:
 	void send(std::string &msg); // Append data to the input_buffer to send to the client
 	void write_output_buffer(std::string const &data); // Append data to the output_buffer to send to the server
 	std::string extract_output_line();
+	void queue_send(const std::string& msg);
+	bool try_flush();
 };
 
 #endif

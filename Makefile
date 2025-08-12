@@ -17,8 +17,7 @@ OBJSDIR = ./objs
 
 # Compiler flags
 # For C++17
-CXXFLAGS = -std=c++17 -Wall -Wextra -Werror -g -Wpedantic -fdiagnostics-color=always \
-    -fdiagnostics-show-option -fno-diagnostics-show-caret
+CXXFLAGS = -std=c++17 -Wall -Wextra -Werror -g # -Wpedantic -fdiagnostics-color=always -fdiagnostics-show-option -fno-diagnostics-show-caret
 # For C++98 (as per project, but you asked for C++17 for this example)
 # CXXFLAGS = -std=c++98 -Wall -Wextra -Werror -g
 
@@ -72,6 +71,10 @@ success_message:
 start_server: re
 	@echo "${GREEN}Starting server...${RESET}"
 	./$(NAME) ${DEFAULT_PORT} ${DEFAULT_PASSWORD}
+
+val:
+	@echo "${GREEN}Running Valgrind...${RESET}"
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes --trace-children=yes -s --log-file=valgrind.log --verbose ./$(NAME) 6667 a
 
 art:
 	@echo "${GREEN}IIIIIIIIIIRRRRRRRRRRRRRRRRR           CCCCCCCCCCCCC             SSSSSSSSSSSSSSS EEEEEEEEEEEEEEEEEEEEEERRRRRRRRRRRRRRRRR   VVVVVVVV           VVVVVVVVEEEEEEEEEEEEEEEEEEEEEERRRRRRRRRRRRRRRRR   "

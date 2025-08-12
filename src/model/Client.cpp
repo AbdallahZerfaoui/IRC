@@ -78,48 +78,51 @@ bool Client::get_passed_realname() const
     return passed_realname;
 }
 
+void Client::queue_send(const std::string& msg)
+{
+	outbuf += msg;
+}
+
+bool Client::try_flush() {
+	while (!outbuf.empty()) {
+		ssize_t n = ::send(_socket->get_fd(), outbuf.data(), outbuf.size(), 0);
+		if (n > 0) {
+			outbuf.erase(0, static_cast<size_t>(n));
+		} else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+			want_pollout = true;
+			return false;
+		} else {
+			std::cerr << "send() failed for client FD " << _socket->get_fd()
+					  << ": " << std::strerror(errno) << std::endl;
+			throw std::runtime_error("send() failed");
+		}
+	}
+	want_pollout = false;
+	return true;
+}
+
 // Send data to the client
 void Client::send(std::string &msg)
 {
-    ssize_t bytes_sent = ::send(_socket->get_fd(), msg.c_str(), msg.size(), 0);
-    if (bytes_sent == -1)
-    {
-        std::cerr << "send() failed for client FD " << _socket->get_fd() << ": " << std::strerror(errno) << std::endl;
-        throw std::runtime_error("send() failed");
-    }
-    if (static_cast<size_t>(bytes_sent) < msg.size())
-    {
-        std::cerr << "Warning: Partial send() for client FD " << _socket->get_fd() << std::endl;
-        throw std::runtime_error("Partial send(), incomplete message sent");
-    }
+	queue_send(msg);
+	try_flush();
 }
 
 // Write data to the output buffer used for sending data to the server
 void Client::write_output_buffer(std::string const &data)
 {
-	output_buffer += data;
+	recv_buffer += data;
 }
 
-// std::string const &Client::get_read_buffer() const
-// {
-// 	return read_buffer;
-// }
-
-// std::string const &Client::get_write_buffer() const
-// {
-// 	return write_buffer;
-// }
-
-// Extract a line from the output buffer
 std::string Client::extract_output_line()
 {
-	size_t pos = output_buffer.find('\n');
+	size_t pos = recv_buffer.find('\n');
 	if (pos == std::string::npos)
 		return "";
 
-	std::string line = output_buffer.substr(0, pos);
-	output_buffer.erase(0, pos + 1);
+	std::string line = recv_buffer.substr(0, pos);
+	recv_buffer.erase(0, pos + 1);
 	if (!line.empty() && line.back() == '\r')
 		line.pop_back();
-	return (line + "\r\n"); // Return the line with CRLF
+	return (line);
 }

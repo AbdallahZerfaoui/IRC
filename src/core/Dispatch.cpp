@@ -1,7 +1,6 @@
 #include "Server.hpp"
 #include "ParsedMessage.hpp"
 
-
 int Server::handle_client_command(size_t &index, int client_fd, const ParsedMessage& parsedmsg)
 {
 	if (parsedmsg.command.empty())
@@ -11,6 +10,7 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 
 	Client& client = _clients.at(client_fd);
 	std::string nickname = client.get_nickname();
+	if (nickname.empty()) nickname = "*";
 
 	if (parsedmsg.command != "PASS" && !client.get_passed_pass())
     {
@@ -45,8 +45,10 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 		client.get_passed_user())
 	{
 		client.set_authenticated();
+		std::string nick_for_welcome = client.get_nickname();
+		if (nick_for_welcome.empty()) nick_for_welcome = "*";
 
-		send_reply(client_fd, 001, { nickname },
+		send_reply(client_fd, 1, { nick_for_welcome },
 				   "Welcome to ft_irc, " + client.get_nickname());
 
 		handle_help(client_fd, ParsedMessage(""));
