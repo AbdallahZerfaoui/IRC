@@ -134,26 +134,145 @@ void Server::broadcast_to_all(const std::string &message, int sender_fd)
 	}
 }
 
-int Server::handle_mode(int fd, const ParsedMessage &msg)
+// MODE #channel +k 123 // set channel key to 123
+// MODE #channel -k // remove channel key
+// MODE #channel +i // set channel to invite only
+// MODE #channel -i // set channel to public
+// MODE #channel +t   // only operators can change the topic
+// MODE #channel -t // everyone can change the topic
+// MODE #channel +o nick // add operator
+// MODE #channel -o nick // remove operator
+// MODE #channel +l 10 // set limit of 10 users
+// MODE #channel -l // remove limit
+int Server::handle_mode(int fd, const ParsedMessage& msg)
 {
-	(void)msg;
-	(void)fd;
-	// Client &client = _clients.at(fd);
-	// std::string nickname = client.get_nickname();
+	Client &client = _clients.at(fd);
+	std::string nickname = client.get_nickname();
 
-	// if (msg.params.empty())
-	// {
-	// 	send_reply(fd, 461, { nickname, "MODE" }, "Not enough parameters");
-	// 	return 0;
-	// }
-	// std::string param = msg.params[0];
+	// At least 2 params: channel + mode
+	if (msg.params.size() < 2)
+	{
+		send_reply(fd, 461, { nickname, "MODE" }, "Not enough parameters");
+		return 0;
+	}
 
-	// if (param != "o" && )
-	// {
+	std::string chan_name = msg.params[0];
+    std::string mode = msg.params[1];
+	std::string param = (msg.params.size() > 2) ? msg.params[2] : "";
 
-	// }
+	if (chan_name.empty() || chan_name[0] != '#')
+	{
+		send_reply(fd, 476, { nickname, "MODE" }, "Bad channel name");
+		return 0;
+	}
+
+	std::string chan = chan_name.substr(1);
+	auto it = _channels.find(chan);
+	if (it == _channels.end())
+	{
+		send_reply(fd, 403, { nickname, chan_name }, "No such channel");
+		return 0;
+	}
+	Channel &channel = it->second;
+
+	if (!channel.has_member(fd))
+	{
+		send_reply(fd, 442, { nickname, chan_name }, "You're not on that channel");
+		return 0;
+	}
+
+	if (!channel.is_operator(fd))
+	{
+		send_reply(fd, 482, { nickname, chan_name }, "You're not channel operator");
+		return 0;
+	}
+
+	if (mode == "+i")
+		channel.set_invite_only(true);
+	else if (mode == "-i")
+		channel.set_invite_only(false);
+	else if (mode == "+t")
+		channel.set_topic_protected(true);
+	else if (mode == "-t")
+		channel.set_topic_protected(false);
+	else if (mode == "+k")
+	{
+		if (param.empty())
+		{
+			send_reply(fd, 461, { nickname, "MODE" }, "Key parameter required");
+			return 0;
+		}
+		channel.set_key(param);
+	}
+	else if (mode == "-k")
+	{
+		channel.remove_key();
+	}
+	else if (mode == "+o")
+	{
+		if (param.empty())
+		{
+			send_reply(fd, 461, { nickname, "MODE" }, "Nick parameter required");
+			return 0;
+		}
+		int target_fd = find_fd_by_nickname(param);
+		if (target_fd == -1 || !channel.has_member(target_fd))
+		{
+			send_reply(fd, 441, { nickname, param }, "Is not on that channel");
+			return 0;
+		}
+		channel.add_operator(target_fd);
+	}
+	else if (mode == "-o")
+	{
+		if (param.empty())
+		{
+			send_reply(fd, 461, { nickname, "MODE" }, "Nick parameter required");
+			return 0;
+		}
+		int target_fd = find_fd_by_nickname(param);
+		if (target_fd == -1 || !channel.has_member(target_fd))
+		{
+			send_reply(fd, 441, { nickname, param }, "Is not on that channel");
+			return 0;
+		}
+		channel.remove_operator(target_fd);
+	}
+    else if (mode == "+l")
+	{
+        if (param.empty() || !std::all_of(param.begin(), param.end(), ::isdigit))
+        {
+            send_reply(fd, 461, { nickname, "MODE" }, "Numeric parameter required");
+            return 0;
+        }
+        int limit = std::stoi(param);
+        if (limit < 0)
+        {
+            send_reply(fd, 501, { nickname, "MODE" }, "Invalid limit");
+            return 0;
+        }
+        channel.set_limit(limit);
+	}
+	else if (mode == "-l")
+	{
+        channel.remove_limit();
+	}
+	else
+	{
+		send_reply(fd, 472, { nickname, mode }, "Unknown MODE");
+		return 0;
+	}
+
+	// Broadcast MODE change
+	std::string broadcast_msg = ":" + nickname + "!user@host MODE #" + chan_name + " " + mode;
+	if (!param.empty())
+		broadcast_msg += " " + param;
+	broadcast_msg += "\r\n";
+	channel.broadcast_message(broadcast_msg, -1);
+
 	return 0;
 }
+
 
 int Server::find_fd_by_nickname(std::string const &nickname) const
 {

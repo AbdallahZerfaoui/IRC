@@ -87,7 +87,7 @@ class Server
 		static void setup_signal_handlers();
 
 		void send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg);
-		
+
 		// void handle_new_connection();
 		// void handle_client_data(int client_fd);
 		// void handle_client_disconnect(int client_fd);
