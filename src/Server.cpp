@@ -152,7 +152,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	// At least 2 params: channel + mode
 	if (msg.params.size() < 2)
 	{
-		send_reply(fd, 461, { nickname, "MODE" }, "Not enough parameters");
+		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "MODE" }, "Not enough parameters");
 		return 0;
 	}
 
@@ -162,7 +162,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		send_reply(fd, 476, { nickname, "MODE" }, "Bad channel name");
+		send_reply(fd, ERR_BADCHANMASK, { nickname, "MODE" }, "Bad channel name");
 		return 0;
 	}
 
@@ -170,20 +170,20 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		send_reply(fd, 403, { nickname, chan_name }, "No such channel");
+		send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, chan_name }, "No such channel");
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.has_member(fd))
 	{
-		send_reply(fd, 442, { nickname, chan_name }, "You're not on that channel");
+		send_reply(fd, ERR_NOTONCHANNEL, { nickname, chan_name }, "You're not on that channel");
 		return 0;
 	}
 
 	if (!channel.is_operator(fd))
 	{
-		send_reply(fd, 482, { nickname, chan_name }, "You're not channel operator");
+		send_reply(fd, ERR_CHANOPRIVSNEEDED, { nickname, chan_name }, "You're not channel operator");
 		return 0;
 	}
 
@@ -199,7 +199,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
 		if (param.empty())
 		{
-			send_reply(fd, 461, { nickname, "MODE" }, "Key parameter required");
+			send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "MODE" }, "Key parameter required");
 			return 0;
 		}
 		channel.set_key(param);
@@ -212,7 +212,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
 		if (param.empty())
 		{
-			send_reply(fd, 461, { nickname, "MODE" }, "Nick parameter required");
+			send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "MODE" }, "Nick parameter required");
 			return 0;
 		}
 		int target_fd = find_fd_by_nickname(param);
@@ -227,7 +227,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
 		if (param.empty())
 		{
-			send_reply(fd, 461, { nickname, "MODE" }, "Nick parameter required");
+			send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "MODE" }, "Nick parameter required");
 			return 0;
 		}
 		int target_fd = find_fd_by_nickname(param);
@@ -242,7 +242,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
         if (param.empty() || !std::all_of(param.begin(), param.end(), ::isdigit))
         {
-            send_reply(fd, 461, { nickname, "MODE" }, "Numeric parameter required");
+            send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "MODE" }, "Numeric parameter required");
             return 0;
         }
         int limit = std::stoi(param);

@@ -8,14 +8,14 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty())
 	{
-		send_reply(fd, 461, { nickname, "TOPIC" }, "Not enough parameters");
+		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "TOPIC" }, "Not enough parameters");
 		return 0;
 	}
 
 	std::string chan_name = msg.params[0];
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		send_reply(fd, 476, { nickname, "TOPIC" }, "Bad channel name");
+		send_reply(fd, ERR_BADCHANMASK, { nickname, "TOPIC" }, "Bad channel name");
 		return 0;
 	}
 
@@ -23,14 +23,14 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		send_reply(fd, 403, { nickname, chan_name }, "No such channel");
+		send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, chan_name }, "No such channel");
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.has_member(fd))
 	{
-		send_reply(fd, 442, { nickname, chan_name }, "You're not on that channel");
+		send_reply(fd, ERR_NOTONCHANNEL, { nickname, chan_name }, "You're not on that channel");
 		return 0;
 	}
 
@@ -39,16 +39,16 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 	{
 		std::string topic = channel.get_topic();
 		if (topic.empty())
-			send_reply(fd, 331, { nickname, chan_name }, "No topic is set");
+			send_reply(fd, RPL_NOTOPIC, { nickname, chan_name }, "No topic is set");
 		else
-			send_reply(fd, 332, { nickname, chan_name }, topic);
+			send_reply(fd, RPL_TOPIC, { nickname, chan_name }, topic);
 		return 0;
 	}
 
     // If a new topic is provided, check if the user is allowed to change it
 	if (channel.is_topic_protected() && !channel.is_operator(fd))
 	{
-		send_reply(fd, 482, { nickname, chan_name }, "You're not channel operator");
+		send_reply(fd, ERR_CHANOPRIVSNEEDED, { nickname, chan_name }, "You're not channel operator");
 		return 0;
 	}
 

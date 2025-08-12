@@ -9,7 +9,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty() || msg.params.size() > 2)
 	{
-		send_reply(fd, 461, { nickname, "JOIN" }, "Wrong number of parameters");
+		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "JOIN" }, "Wrong number of parameters");
 		return 0;
 	}
 
@@ -21,7 +21,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 	{
 		if (chans[i].empty() || chans[i][0] != '#')
 		{
-			send_reply(fd, 476, { nickname, "JOIN" }, "Bad channel name");
+			send_reply(fd, ERR_BADCHANMASK, { nickname, "JOIN" }, "Bad channel name");
 			continue;
 		}
 		chan = chans[i].substr(1); // Remove the '#' character
@@ -34,14 +34,14 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
         // if the channel already exists and the client is already a member
         if (_channels.at(chan).has_member(fd))
         {
-            send_reply(fd, 443, { nickname, chan }, "You are already on that channel");
+            send_reply(fd, ERR_USERONCHANNEL, { nickname, chan }, "You are already on that channel");
             continue;
         }
 
 		// If the channel requires a key and the key is not provided or incorrect
 		if (_channels.at(chan).requires_key() && (key.empty() || key != _channels.at(chan).get_channel_key()))
 		{
-			send_reply(fd, 475, { nickname, chans[i] }, "Cannot join, bad key");
+			send_reply(fd, ERR_BADCHANNELKEY, { nickname, chans[i] }, "Cannot join, bad key");
 			continue;
 		}
 
@@ -49,14 +49,14 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
         // AND the user was not invited
         if (_channels.at(chan).get_limit() != -1 && static_cast<int>(_channels.at(chan).get_members().size()) >= _channels.at(chan).get_limit() && !_channels.at(chan).is_invited(fd))
 		{
-			send_reply(fd, 471, { nickname, chans[i] }, "Cannot join, channel is full");
+			send_reply(fd, ERR_CHANNELISFULL, { nickname, chans[i] }, "Cannot join, channel is full");
 			continue;
 		}
 
         // If the channel is invite-only and the user was not invited
         if (_channels.at(chan).is_invite_only() && !_channels.at(chan).is_invited(fd))
         {
-            send_reply(fd, 473, { nickname, chans[i] }, "Cannot join, channel is invite-only");
+            send_reply(fd, ERR_INVITEONLYCHAN, { nickname, chans[i] }, "Cannot join, channel is invite-only");
             continue;
         }
 
@@ -64,7 +64,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		_channels.at(chan).add_client(fd);
 		try
 		{
-			send_reply(fd, 476, { nickname }, "You have joined the channel " + chan);
+			send_reply(fd, ERR_BADCHANMASK, { nickname }, "You have joined the channel " + chan);
 		}
 		catch (const std::exception& e)
 		{
@@ -81,7 +81,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 			_channels.at(chan).add_operator(fd);
 			try
 			{
-				send_reply(fd, 705, { nickname, "JOIN", "#" + chan }, "You are now an operator of the channel");
+				send_reply(fd, RPL_YOUREOPER, { nickname, "JOIN", "#" + chan }, "You are now an operator of the channel");
 			}
 			catch (const std::exception& e)
 			{
