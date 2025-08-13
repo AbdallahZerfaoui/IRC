@@ -21,6 +21,8 @@
 #include <functional>
 # include "ParsedMessage.hpp"
 # include "../includes/Replies.hpp" // For reply codes
+#include <algorithm> // For std::all_of
+#include <cctype> // For std::isalnum
 
 // Constants
 # define DEFAULT_PORT 6667 // Default port for IRC servers
