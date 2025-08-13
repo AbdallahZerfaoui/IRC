@@ -20,7 +20,7 @@ void Server::send_reply(int fd, int code, const std::vector<std::string>& params
         if (i) oss << ' ';
         oss << params[i];
     }
-    oss << " :" << msg << "\r\n";
+    oss << BLUE << BOLD << " :" << msg << RESET << "\r\n";
     std::string text = oss.str();
     // _clients.at(fd).send(text);
 	Client& c = _clients.at(fd);
