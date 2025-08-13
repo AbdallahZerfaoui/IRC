@@ -93,6 +93,8 @@ class Server
 
 		void send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg);
 		void enable_pollout(int fd, bool enable);
+		std::string make_prefix(const Client& c);
+		void send_raw(int fd, const std::string& line);
 
 		// void handle_new_connection();
 		// void handle_client_data(int client_fd);

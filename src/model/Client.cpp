@@ -29,7 +29,17 @@ bool Client::is_authenticated() const
 
 std::string const Client::get_nickname() const
 {
-	return _nickname.empty() ? "anonymous" : _nickname;
+	return _nickname.empty() ? "" : _nickname;
+}
+
+std::string const Client::get_realname() const
+{
+	return _realname.empty() ? "real" : _realname;
+}
+
+std::string const Client::get_username() const
+{
+	return _username.empty() ? "user" : _username;
 }
 
 void Client::set_passed_pass(std::string const &pass)
@@ -132,4 +142,9 @@ std::string Client::extract_output_line()
 	if (!line.empty() && line.back() == '\r')
 		line.pop_back();
 	return (line);
+}
+
+bool Client::get_wants_pollout() const
+{
+	return want_pollout;
 }

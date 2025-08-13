@@ -55,6 +55,8 @@ public:
 	bool get_passed_realname() const;
 
 	std::string const get_nickname() const;
+	std::string const get_username() const;
+	std::string const get_realname() const;
 	void set_passed_pass(std::string const &pass);
 	void set_passed_nick(std::string const &nick);
 	void set_passed_user(std::string const &user);
@@ -71,6 +73,7 @@ public:
 	std::string extract_output_line();
 	void queue_send(const std::string& msg);
 	bool try_flush();
+	bool get_wants_pollout() const;
 };
 
 #endif

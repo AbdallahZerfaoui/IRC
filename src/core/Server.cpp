@@ -285,6 +285,18 @@ int Server::find_fd_by_nickname(std::string const &nickname) const
 	return -1;
 }
 
+void Server::send_raw(int fd, const std::string& line)
+{
+    std::string s = line;
+    _clients.at(fd).send(s);
+}
+
+std::string Server::make_prefix(const Client& c)
+{
+    std::string host = "localhost";
+    return c.get_nickname() + "!" + c.get_username() + "@" + host;
+}
+
 // The main server loop for Block 1
 void Server::run()
 {
@@ -326,6 +338,12 @@ void Server::run()
 		for (size_t i = 1; i < _pollfds.size(); ++i)
 		{
 			int fd = _pollfds[i].fd;
+			Client& c = _clients.at(fd);
+			if (c.get_wants_pollout())
+				_pollfds[i].events |= POLLOUT;
+			else
+				_pollfds[i].events &= ~POLLOUT;
+
 			if (_pollfds[i].revents & POLLHUP)
 			{
 				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Disconnection detected." << std::endl;
