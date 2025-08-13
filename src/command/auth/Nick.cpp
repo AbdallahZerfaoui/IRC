@@ -22,20 +22,12 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 	{
 		if (s.empty() || s.size() > 15)
 			return false;
-		auto isletter = [](unsigned char c)
-		{ return std::isalpha(c); };
-		auto isdigit = [](unsigned char c)
-		{ return std::isdigit(c); };
-		auto isspecial = [](unsigned char c)
-		{
-			return std::string("-_[]\\`^{}|").find(c) != std::string::npos;
-		};
-		if (!(isletter(s[0]) || isspecial(s[0])))
+		if (!(std::isalpha(s[0]) || std::string("-_[]\\`^{}|").find(s[0]) != std::string::npos))
 			return false;
 		for (size_t i = 1; i < s.size(); ++i)
 		{
 			unsigned char c = s[i];
-			if (!(isletter(c) || isdigit(c) || isspecial(c)))
+			if (!(std::isalpha(c) || std::isdigit(c) || std::string("-_[]\\`^{}|").find(c) != std::string::npos))
 				return false;
 		}
 		return true;
@@ -62,7 +54,8 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 	if (is_change)
 	{
 		// RFC: :<oldnick>!user@host NICK :<newnick>
-		std::string line = ":" + prefix + " NICK :" + nick + "\r\n";
+		// std::string line = ":" + prefix + " NICK :" + nick + "\r\n";
+		std::string line = ":" + old + "!" + client.get_username() + "@" + client.get_hostname() + " NICK :" + nick + "\r\n";
 		std::cout << line << std::endl;
 		send_raw(fd, line);
 		for (const auto &ch : _channels)

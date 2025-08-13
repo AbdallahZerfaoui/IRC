@@ -274,7 +274,7 @@ void Server::send_raw(int fd, const std::string& line)
 
 std::string Server::make_prefix(const Client& c)
 {
-    std::string host = "localhost";
+    std::string host = "127.0.0.1";
     return c.get_nickname() + "!" + c.get_username() + "@" + host;
 }
 

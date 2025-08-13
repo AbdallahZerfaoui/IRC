@@ -42,6 +42,11 @@ std::string const Client::get_username() const
 	return _username.empty() ? "user" : _username;
 }
 
+std::string const Client::get_hostname() const
+{
+	return HOSTNAME;
+}
+
 void Client::set_passed_pass(std::string const &pass)
 {
 	_password = pass;

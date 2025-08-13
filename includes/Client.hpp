@@ -1,6 +1,6 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
-
+#define HOSTNAME "127.0.0.1"
 #include "Socket.hpp"
 #include <string>
 #include <vector>
@@ -74,6 +74,7 @@ public:
 	void queue_send(const std::string& msg);
 	bool try_flush();
 	bool get_wants_pollout() const;
+	std::string const get_hostname() const;
 };
 
 #endif
