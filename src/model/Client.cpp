@@ -29,7 +29,7 @@ bool Client::is_authenticated() const
 
 std::string const Client::get_nickname() const
 {
-	return _nickname.empty() ? "" : _nickname;
+	return _nickname.empty() ? "*" : _nickname;
 }
 
 std::string const Client::get_realname() const

@@ -116,25 +116,6 @@ void Server::setup_signal_handlers()
 	std::cout << GREEN << "Signal handlers for SIGINT and SIGQUIT set up." << RESET << std::endl;
 }
 
-void Server::broadcast_to_all(const std::string &message, int sender_fd)
-{
-	for (const auto &client : _clients)
-	{
-		if (client.first != sender_fd)
-		{
-			std::string nickname = client.second.get_nickname();
-			try
-			{
-				send_reply(client.first, ERR_ALREADYREGISTERED, {nickname}, message);
-			}
-			catch (const std::exception &e)
-			{
-				std::cerr << "Error sending message: " << e.what() << '\n';
-			}
-		}
-	}
-}
-
 // MODE #channel +k RPL_CUSTOM123 // set channel key to RPL_CUSTOM123
 // MODE #channel -k // remove channel key
 // MODE #channel +i // set channel to invite only

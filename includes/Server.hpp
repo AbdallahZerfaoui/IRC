@@ -56,7 +56,6 @@ class Server
 		// void handle_authentication(size_t &index, int client_fd, const std::vector<std::string>& lines);
 		void process_client_data(size_t& index, int client_fd);
 		bool is_duplicate_nickname(const std::string& nickname);
-		void broadcast_to_all(const std::string& message, int sender_fd);
 		int find_fd_by_nickname(std::string const &nickname) const;
 
         // Helper methods for authentication

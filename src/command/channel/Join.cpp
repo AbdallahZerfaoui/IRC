@@ -21,7 +21,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		const std::string& raw = chans[i];
 		if (raw.empty() || raw[0] != '#')
 		{
-			send_reply(fd, ERR_BADCHANMASK, { nickname, "JOIN" }, "Bad Channel Mask");
+			send_reply(fd, ERR_BADCHANMASK, { nickname, raw }, "Bad Channel Mask");
 			continue;
 		}
 		std::string name = raw.substr(1); // Remove the '#' character
@@ -68,11 +68,10 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		if (ch.get_members().size() == 1)
 		{
             std::string modeLine = ":" + _hostname + " MODE #" + name + " +nt\r\n";
-            send_raw(fd, modeLine);
             ch.broadcast_message(modeLine, -1);
+
             ch.add_operator(fd);
             std::string opLine = ":" + _hostname + " MODE #" + name + " +o " + nickname + "\r\n";
-            send_raw(fd, opLine);
             ch.broadcast_message(opLine, -1);
 		}
 
