@@ -6,7 +6,7 @@
 /*   By: tkeil <tkeil@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/24 17:50:46 by tkeil             #+#    #+#             */
-/*   Updated: 2025/07/09 20:52:36 by tkeil            ###   ########.fr       */
+/*   Updated: 2025/08/13 15:21:04 by tkeil            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -222,4 +222,9 @@ void Channel::remove_limit()
 int Channel::get_limit() const
 {
     return _limit;
+}
+
+std::string Channel::topic() const
+{
+	return _topic;
 }
