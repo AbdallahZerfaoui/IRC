@@ -62,17 +62,17 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		// Finally add the client to the channel
 		ch.add_client(fd);
 		std::string joinLine = ":" + make_prefix(client) + " JOIN #" + name + "\r\n";
-        send_raw(fd, joinLine);
+        // send_raw(fd, joinLine);
 		ch.broadcast_message(joinLine, fd);
 
 		if (ch.get_members().size() == 1)
 		{
             std::string modeLine = ":" + _hostname + " MODE #" + name + " +nt\r\n";
-            ch.broadcast_message(modeLine, -1);
+            // ch.broadcast_message(modeLine, -1);
 
             ch.add_operator(fd);
             std::string opLine = ":" + _hostname + " MODE #" + name + " +o " + nickname + "\r\n";
-            ch.broadcast_message(opLine, -1);
+            // ch.broadcast_message(opLine, -1);
 		}
 
 		if (ch.topic().empty())

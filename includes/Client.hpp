@@ -68,7 +68,7 @@ public:
 	// std::string const &get_read_buffer() const;
 	// std::string const &get_write_buffer() const;
 
-	void send(std::string &msg); // Append data to the input_buffer to send to the client
+	void send(std::string msg); // Append data to the input_buffer to send to the client
 	void write_output_buffer(std::string const &data); // Append data to the output_buffer to send to the server
 	std::string extract_output_line();
 	void queue_send(const std::string& msg);

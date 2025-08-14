@@ -124,7 +124,7 @@ bool Client::try_flush()
 }
 
 // Send data to the client
-void Client::send(std::string &msg)
+void Client::send(std::string msg)
 {
 	queue_send(msg);
 	try_flush();

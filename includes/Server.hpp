@@ -42,6 +42,7 @@ class Server
 		std::vector<pollfd> _pollfds; // List of file descriptors poll() should monitor
         std::unordered_map<int, Client> _clients; // Map of client fds to Client objects. For client data like read/write buffers, status, nickname, ...
 		std::map<std::string, Channel> _channels; // Map of channel names to Channel objects
+		static std::map<ReplyCode, std::string> _reply_messages; // Map of reply codes to messages
 		static bool _signal_received; // For signal handling
 		typedef std::function<int(Server&, int, const ParsedMessage&)> CommandHandler;
 		static const std::unordered_map<std::string, CommandHandler> handlers;
@@ -96,6 +97,7 @@ class Server
 		void enable_pollout(int fd, bool enable);
 		std::string make_prefix(const Client& c);
 		void send_raw(int fd, const std::string& line);
+		std::string buildReply(ReplyCode code, const std::string& cmd, const std::string& nick);
 
 		// void handle_new_connection();
 		// void handle_client_data(int client_fd);

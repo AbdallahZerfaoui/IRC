@@ -5,12 +5,6 @@
 
 int Server::parse_pass(int fd, const ParsedMessage& msg)
 {
-	for (const auto& param : msg.params)
-	{
-		std::cout << param << " ";
-	}
-	std::cout << std::endl;
-
 	Client& client = _clients.at(fd);
 	std::string nickname = client.get_nickname();
 
@@ -18,7 +12,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			send_reply(fd, ERR_ALREADYREGISTERED, { nickname, "PASS" }, "You may not reregister");
+			client.send(buildReply(ERR_ALREADYREGISTERED, "PASS", client.get_nickname()));
 		}
 		catch (const std::exception& e)
 		{
@@ -31,7 +25,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "PASS" }, "Not enough parameters");
+			client.send(buildReply(ERR_NEEDMOREPARAMS, "PASS", nickname));
 		}
 		catch (const std::exception& e)
 		{
@@ -44,7 +38,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			send_reply(fd, ERR_PASSWDMISMATCH, { nickname, "PASS" }, "Password incorrect");
+			client.send(buildReply(ERR_PASSWDMISMATCH, "PASS", nickname));
 		}
 		catch (const std::exception& e)
 		{

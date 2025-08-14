@@ -16,6 +16,7 @@ void Server::enable_pollout(int fd, bool enable)
 	}
 }
 
+
 void Server::send_reply(int fd, int code, const std::vector<std::string> &params, const std::string &msg)
 {
 	std::ostringstream oss;

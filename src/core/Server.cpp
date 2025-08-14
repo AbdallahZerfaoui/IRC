@@ -3,6 +3,40 @@
 
 bool Server::_signal_received = false;
 
+std::map<ReplyCode, std::string> _reply_messages = {
+    // Registration
+    {RPL_WELCOME,              "Welcome to the Internet Relay Network"}, // 001
+
+    // TOPIC
+    {RPL_NOTOPIC,              "No topic is set"},                       // 331
+    {RPL_TOPIC,                "<channel> :<topic>"},                    // 332
+
+    // Errors for users/channels
+    {ERR_NOSUCHNICK,           "No such nick/channel"},                  // 401
+    {ERR_NOSUCHCHANNEL,        "No such channel"},                       // 403
+    {ERR_CANNOTSENDTOCHAN,     "Cannot send to channel"},                 // 404
+    {ERR_NOORIGIN,             "No origin specified"},                    // 409
+    {ERR_NORECIPIENT,          "No recipient given (<command>)"},         // 411
+    {ERR_UNKNOWNCOMMAND,       "Unknown command"},                        // 421
+    {ERR_NONICKNAMEGIVEN,      "No nickname given"},                      // 431
+    {ERR_ERRONEUSNICKNAME,     "Erroneous nickname"},                     // 432
+    {ERR_NICKNAMEINUSE,        "Nickname is already in use"},             // 433
+    {ERR_USERNOTINCHANNEL,     "They are not on that channel"},           // 441
+    {ERR_NOTONCHANNEL,         "You're not on that channel"},             // 442
+    {ERR_USERONCHANNEL,        "User is already on channel"},             // 443
+    {ERR_NOTREGISTERED,        "You have not registered"},                // 451
+    {ERR_NEEDMOREPARAMS,       "Not enough parameters"},                  // 461
+    {ERR_ALREADYREGISTERED,    "You may not reregister"},                 // 462
+    {ERR_PASSWDMISMATCH,       "Password incorrect"},                     // 464
+    {ERR_CHANNELISFULL,        "Cannot join channel (+l)"},               // 471
+    {ERR_UNKNOWNMODE,          "Unknown mode"},                           // 472
+    {ERR_INVITEONLYCHAN,       "Cannot join channel (+i)"},               // 473
+    {ERR_BADCHANNELKEY,        "Cannot join channel (+k)"},               // 475
+    {ERR_BADCHANMASK,          "Bad Channel Mask"},                       // 476
+    {ERR_CHANOPRIVSNEEDED,     "You're not channel operator"},            // 482
+    {ERR_UMODEUNKNOWNFLAG,     "Unknown MODE flag"}                       // 501
+};
+
 // a helper function that generate a sockaddr_in structure, fill it and returns it
 sockaddr_in Server::create_sockaddr_in(int port)
 {
@@ -275,8 +309,16 @@ void Server::send_raw(int fd, const std::string& line)
 
 std::string Server::make_prefix(const Client& c)
 {
-    std::string host = "127.0.0.1";
-    return c.get_nickname() + "!" + c.get_username() + "@" + host;
+    return c.get_nickname() + "!" + c.get_username() + "@" + _hostname;
+}
+
+std::string Server::buildReply(ReplyCode code, const std::string &cmd, const std::string &nick)
+{
+	// // Build a reply message in the format expected by IRC clients
+	// e.g.: ":server_name 001 nick :Welcome to the Internet Relay Network\r\n"
+	std::ostringstream oss;
+	oss << ":" << _server_name << " " << std::setw(3) << std::setfill('0') << code << " " << nick << " " << cmd << " :" << _reply_messages[code] << "\r\n";
+	return oss.str();
 }
 
 // The main server loop for Block 1
