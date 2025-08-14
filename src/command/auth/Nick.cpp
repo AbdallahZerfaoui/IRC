@@ -55,7 +55,8 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 	{
 		// RFC: :<oldnick>!user@host NICK :<newnick>
 		// std::string line = ":" + prefix + " NICK :" + nick + "\r\n";
-		std::string line = ":" + old + "!" + client.get_username() + "@" + "localhost" + " NICK :" + nick + "\r\n";
+		// std::string line = ":" + old + "!" + client.get_username() + "@" + "localhost" + " NICK :" + nick + "\r\n";
+		std::string line = ":" + old + "!" + client.get_username() + "@" + _hostname + " NICK :" + nick + "\r\n";
 		std::cout << line;
 		send_raw(fd, line);
 		for (const auto &ch : _channels)

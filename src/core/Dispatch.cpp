@@ -48,7 +48,9 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 		client.get_passed_nick() &&
 		client.get_passed_user())
 	{
-		std::string joinLine = ":localhost 001 " + client.get_nickname() + " :Welcome to the server\r\n";
+		std::ostringstream oss;
+		oss << ':' << _hostname << ' ' << std::setw(3) << std::setfill('0') << RPL_WELCOME << ' ' << client.get_nickname() << ' ' << ":Welcome to the server\r\n";
+		std::string joinLine = oss.str();
         send_raw(client_fd, joinLine);
 		client.set_authenticated();
 	}

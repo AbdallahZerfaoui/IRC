@@ -29,6 +29,7 @@ Server::Server(int port, const std::string &password)
 		throw std::runtime_error(std::string("Failed to get hostname: ") + std::strerror(errno));
 	}
 	_hostname = hostname_buffer;
+	std::cout << "Server hostname test123: " << _hostname << std::endl;
 	if (!valid_inputs(port, password))
 		return;
 	// Setup the server address structure
