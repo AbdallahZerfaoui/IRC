@@ -3,13 +3,14 @@
 
 bool Server::_signal_received = false;
 
-std::map<ReplyCode, std::string> _reply_messages = {
+std::map<ReplyCode, std::string> Server::_reply_messages = {
     // Registration
     {RPL_WELCOME,              "Welcome to the Internet Relay Network"}, // 001
 
     // TOPIC
     {RPL_NOTOPIC,              "No topic is set"},                       // 331
     {RPL_TOPIC,                "<channel> :<topic>"},                    // 332
+
 
     // Errors for users/channels
     {ERR_NOSUCHNICK,           "No such nick/channel"},                  // 401
@@ -57,13 +58,12 @@ Server::Server(int port, const std::string &password)
 	  _port(port),
 	  _password(password)
 {
-	char hostname_buffer[RPL_ADMINME];
+	char hostname_buffer[256];
 	if (gethostname(hostname_buffer, sizeof(hostname_buffer)) != 0)
 	{
 		throw std::runtime_error(std::string("Failed to get hostname: ") + std::strerror(errno));
 	}
 	_hostname = hostname_buffer;
-	std::cout << "Server hostname test123: " << _hostname << std::endl;
 	if (!valid_inputs(port, password))
 		return;
 	// Setup the server address structure
@@ -312,12 +312,20 @@ std::string Server::make_prefix(const Client& c)
     return c.get_nickname() + "!" + c.get_username() + "@" + _hostname;
 }
 
-std::string Server::buildReply(ReplyCode code, const std::string &cmd, const std::string &nick)
+std::string Server::buildReply(ReplyCode code, const std::string& cmd, const std::string& nick)
 {
 	// // Build a reply message in the format expected by IRC clients
 	// e.g.: ":server_name 001 nick :Welcome to the Internet Relay Network\r\n"
 	std::ostringstream oss;
 	oss << ":" << _server_name << " " << std::setw(3) << std::setfill('0') << code << " " << nick << " " << cmd << " :" << _reply_messages[code] << "\r\n";
+	return oss.str();
+}
+
+// std::string line = ":" + old + "!" + client.get_username() + "@" + _hostname + " NICK :" + nick + "\r\n";
+std::string Server::buildAction(User &user, const std::string &command, const std::string &target)
+{
+	std::ostringstream oss;
+	oss << ":" + user.get_nickname() << "!" << user.get_username() << "@" + user.get_hostname() << " " << command << " :" << target << "\r\n";
 	return oss.str();
 }
 

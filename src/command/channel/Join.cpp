@@ -5,11 +5,11 @@
 int Server::handle_join(int fd, const ParsedMessage& msg)
 {
 	Client &client = _clients.at(fd);
-	std::string nickname = client.get_nickname().empty() ? "*" : client.get_nickname();
+	std::string nickname = client.get_nickname();
 
 	if (msg.params.empty())
 	{
-		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "JOIN" }, "Not enough parameters");
+		client.send(buildReply(ERR_NEEDMOREPARAMS, "JOIN", nickname));
 		return 0;
 	}
 
@@ -21,7 +21,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		const std::string& raw = chans[i];
 		if (raw.empty() || raw[0] != '#')
 		{
-			send_reply(fd, ERR_BADCHANMASK, { nickname, raw }, "Bad Channel Mask");
+			client.send(buildReply(ERR_BADCHANMASK, "JOIN", nickname));
 			continue;
 		}
 		std::string name = raw.substr(1); // Remove the '#' character
@@ -35,32 +35,35 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
         // if the channel already exists and the client is already a member
         if (ch.has_member(fd))
         {
-            send_reply(fd, ERR_USERONCHANNEL, { nickname, "#" + name }, "You are already on that channel");
+			client.send(buildReply(ERR_USERONCHANNEL, ch.get_name(), nickname));
             continue;
         }
 
 		// If the channel requires a key and the key is not provided or incorrect
 		if (ch.requires_key() && (key.empty() || key != ch.get_channel_key()))
 		{
-			send_reply(fd, ERR_BADCHANNELKEY, { nickname, "#" + name }, "Cannot join channel (+k)");
+			client.send(buildReply(ERR_BADCHANNELKEY, ch.get_name(), nickname));
 			continue;
 		}
 
 		// If the channel is invite-only and the user was not invited
-		if (ch.is_invite_only() && !ch.is_invited(fd)) {
-            send_reply(fd, ERR_INVITEONLYCHAN, { nickname, "#" + name }, "Cannot join channel (+i)");
+		if (ch.is_invite_only() && !ch.is_invited(fd))
+		{
+			client.send(buildReply(ERR_INVITEONLYCHAN, ch.get_name(), nickname));
             continue;
         }
 
 		// If the channel has a user limit and the channel is full
         // AND the user was not invited
-        if (ch.get_limit() != -1 && (int)ch.get_members().size() >= ch.get_limit() && !ch.is_invited(fd)) {
-            send_reply(fd, ERR_CHANNELISFULL, { nickname, "#" + name }, "Cannot join channel (+l)");
+        if (ch.get_limit() != -1 && (int)ch.get_members().size() >= ch.get_limit() && !ch.is_invited(fd))
+		{
+			client.send(buildReply(ERR_CHANNELISFULL, ch.get_name(), nickname));
             continue;
         }
 
 		// Finally add the client to the channel
 		ch.add_client(fd);
+		buildReply(RPL_, ch.get_name(), nickname);
 		std::string joinLine = ":" + make_prefix(client) + " JOIN #" + name + "\r\n";
         // send_raw(fd, joinLine);
 		ch.broadcast_message(joinLine, fd);
@@ -76,7 +79,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		}
 
 		if (ch.topic().empty())
-			send_reply(fd, 331, { nickname, "#" + name }, "No topic is set");
+			client.send(buildReply(RPL_NOTOPIC, ch.get_name(), "No topic is set"));
 		else
 			send_reply(fd, 332, { nickname, "#" + name }, ch.topic());
 	}

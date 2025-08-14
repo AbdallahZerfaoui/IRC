@@ -1,6 +1,21 @@
 #include "Server.hpp"
 #include "ParsedMessage.hpp"
 
+bool is_valid_nick(const std::string &nick)
+{
+	if (nick.empty() || nick.size() > 15)
+		return false;
+	if (!(std::isalpha(nick[0]) || std::string("-_[]\\`^{}|").find(nick[0]) != std::string::npos))
+		return false;
+	for (size_t i = 1; i < nick.size(); ++i)
+	{
+		unsigned char c = nick[i];
+		if (!(std::isalpha(c) || std::isdigit(c) || std::string("-_[]\\`^{}|").find(c) != std::string::npos))
+			return false;
+	}
+	return true;
+}
+
 int Server::parse_nick(int fd, const ParsedMessage &msg)
 {
 	Client &client = _clients.at(fd);
@@ -8,7 +23,7 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 
 	if (msg.params.empty() || msg.params[0].empty())
 	{
-		send_reply(fd, ERR_NONICKNAMEGIVEN, {nickname}, "No nickname given");
+		client.send(buildReply(ERR_NONICKNAMEGIVEN, "NICK", nickname));
 		return 0;
 	}
 
@@ -18,46 +33,30 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 		nick.erase(0, 1);
 	}
 
-	auto is_valid_nick = [](const std::string &s) -> bool
-	{
-		if (s.empty() || s.size() > 15)
-			return false;
-		if (!(std::isalpha(s[0]) || std::string("-_[]\\`^{}|").find(s[0]) != std::string::npos))
-			return false;
-		for (size_t i = 1; i < s.size(); ++i)
-		{
-			unsigned char c = s[i];
-			if (!(std::isalpha(c) || std::isdigit(c) || std::string("-_[]\\`^{}|").find(c) != std::string::npos))
-				return false;
-		}
-		return true;
-	};
+	auto valid_nick = is_valid_nick(nick);
 
-	if (!is_valid_nick(nick))
+	if (!valid_nick)
 	{
-		send_reply(fd, ERR_ERRONEUSNICKNAME, {nickname, nick}, "Erroneous nickname");
+		client.send(buildReply(ERR_ERRONEUSNICKNAME, "NICK", nickname));
 		return 0;
 	}
 
 	if (is_duplicate_nickname(nick))
 	{
-		send_reply(fd, ERR_NICKNAMEINUSE, {nickname, "NICK"}, "Nickname is already in use");
+		client.send(buildReply(ERR_NICKNAMEINUSE, "NICK", nickname));
 		return 0;
 	}
 
 	std::string old = client.get_nickname();
-	const bool is_change = !old.empty() && old != "anonymous" && old != nick;
+	const bool is_change = !old.empty() && old != nick;
 	_clients.at(fd).set_passed_nick(nick);
-
-	const std::string prefix = make_prefix(client);
 
 	if (is_change)
 	{
-		// RFC: :<oldnick>!user@host NICK :<newnick>
+		// RFC: ":<oldnick>!user@host NICK :<newnick>"
 		// std::string line = ":" + prefix + " NICK :" + nick + "\r\n";
 		// std::string line = ":" + old + "!" + client.get_username() + "@" + "localhost" + " NICK :" + nick + "\r\n";
 		std::string line = ":" + old + "!" + client.get_username() + "@" + _hostname + " NICK :" + nick + "\r\n";
-		std::cout << line;
 		send_raw(fd, line);
 		for (const auto &ch : _channels)
 		{
@@ -65,13 +64,6 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 			{
 				ch.second.broadcast_message(line, fd);
 			}
-		}
-
-		for (auto &c : _clients)
-		{
-			std::cout << "Client FD " << c.first << " changed nickname from '" 
-					  << old << "' to '" << nick << "'." << std::endl;
-			std::cout << "His nickname is now '" << c.second.get_nickname() << "'." << std::endl;
 		}
 	}
 	return (0);

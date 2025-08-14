@@ -8,6 +8,9 @@ enum ReplyCode {
     // TOPIC
     RPL_NOTOPIC            = 331,
     RPL_TOPIC              = 332,
+	RPL_HELPSTART		   = 704,
+	RPL_HELPTXT			   = 705,
+	RPL_ENDOFHELP		   = 706,
 
     // Errors for users/channels
     ERR_NOSUCHNICK         = 401,
@@ -32,7 +35,7 @@ enum ReplyCode {
     ERR_BADCHANNELKEY      = 475,
     ERR_BADCHANMASK        = 476,
     ERR_CHANOPRIVSNEEDED   = 482,
-    ERR_UMODEUNKNOWNFLAG   = 501
+    ERR_UMODEUNKNOWNFLAG   = 501,
 };
 
 #endif

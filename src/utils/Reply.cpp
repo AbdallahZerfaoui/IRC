@@ -29,12 +29,5 @@ void Server::send_reply(int fd, int code, const std::vector<std::string> &params
 	}
 	oss << BLUE << BOLD << " :" << msg << RESET << "\r\n";
 	std::string text = oss.str();
-	// _clients.at(fd).send(text);
-	Client &c = _clients.at(fd);
-	c.queue_send(text);
-	if (!c.try_flush())
-	{
-		// If the output buffer is not empty, we need to enable POLLOUT for this client
-		enable_pollout(fd, true);
-	}
+	_clients.at(fd).send(text);
 }

@@ -23,7 +23,7 @@ int Server::handle_channels(int fd, const ParsedMessage& msg)
 		{
 			list = "None";
 		}
-		send_reply(fd, RPL_HELPTXT, { nickname, "CHANNELS" }, list);
+		send_reply(fd, 123, { nickname, "CHANNELS" }, list);
 
 	}
 	catch (const std::exception& e)
