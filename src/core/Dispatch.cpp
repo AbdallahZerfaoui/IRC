@@ -10,8 +10,6 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 
 	Client &client = _clients.at(client_fd);
 	std::string nickname = client.get_nickname();
-	if (nickname.empty())
-		nickname = "*";
 
 	bool preauth_ok =
 		parsedmsg.command == "PASS" ||
@@ -50,15 +48,9 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 		client.get_passed_nick() &&
 		client.get_passed_user())
 	{
+		std::string joinLine = ":localhost 001 " + client.get_nickname() + " :Welcome to the server\r\n";
+        send_raw(client_fd, joinLine);
 		client.set_authenticated();
-		std::string nick_for_welcome = client.get_nickname();
-		if (nick_for_welcome.empty())
-			nick_for_welcome = "*";
-
-		send_reply(client_fd, RPL_WELCOME, {nick_for_welcome},
-				   "Welcome to ft_irc, " + client.get_nickname());
-
-		handle_help(client_fd, ParsedMessage(""));
 	}
 	return 0;
 }
