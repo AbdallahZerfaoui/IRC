@@ -21,20 +21,20 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 
 	if (!preauth_ok && !client.get_passed_pass())
 	{
-		send_reply(client_fd, ERR_USERNOTINCHANNEL, {nickname}, "You have not registered");
+		client.send(buildReply(client, ERR_NOTREGISTERED, {parsedmsg.command}));
 		return 0;
 	}
 
 	if (!client.is_authenticated() && !preauth_ok)
 	{
-		send_reply(client_fd, ERR_USERNOTINCHANNEL, {nickname}, "You have not registered");
+		client.send(buildReply(client, ERR_NOTREGISTERED, {parsedmsg.command}));
 		return 0;
 	}
 
 	auto it = handlers.find(parsedmsg.command);
 	if (it == handlers.end())
 	{
-		send_reply(client_fd, ERR_UNKNOWNCOMMAND, {nickname, parsedmsg.command}, "Unknown command");
+		client.send(buildReply(client, ERR_UNKNOWNCOMMAND, {nickname, parsedmsg.command}));
 		return 0;
 	}
 	if (it->second(*this, client_fd, parsedmsg) == -1)
@@ -48,10 +48,7 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 		client.get_passed_nick() &&
 		client.get_passed_user())
 	{
-		std::ostringstream oss;
-		oss << ':' << _hostname << ' ' << std::setw(3) << std::setfill('0') << RPL_WELCOME << ' ' << client.get_nickname() << ' ' << ":Welcome to the server\r\n";
-		std::string joinLine = oss.str();
-        send_raw(client_fd, joinLine);
+		client.send(buildReply(client, RPL_WELCOME, {client.get_nickname()}));
 		client.set_authenticated();
 	}
 	return 0;

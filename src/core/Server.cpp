@@ -171,7 +171,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	// At least 2 params: channel + mode
 	if (msg.params.size() < 2)
 	{
-		send_reply(fd, 461, { nickname, "MODE" }, "Not enough parameters");
+		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 		return 0;
 	}
 
@@ -181,7 +181,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		send_reply(fd, 476, { nickname, "MODE" }, "Bad channel name");
+		client.send(buildReply(client, ERR_BADCHANMASK, {"MODE"}));
 		return 0;
 	}
 
@@ -189,20 +189,20 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		send_reply(fd, 403, { nickname, chan_name }, "No such channel");
+		client.send(buildReply(client, ERR_NOSUCHCHANNEL, {chan_name}));
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.has_member(fd))
 	{
-		send_reply(fd, 442, { nickname, chan_name }, "You're not on that channel");
+		client.send(buildReply(client, ERR_NOTONCHANNEL, {chan_name}));
 		return 0;
 	}
 
 	if (!channel.is_operator(fd))
 	{
-		send_reply(fd, 482, { nickname, chan_name }, "You're not channel operator");
+		client.send(buildReply(client, ERR_CHANOPRIVSNEEDED, {chan_name}));
 		return 0;
 	}
 
@@ -218,7 +218,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
 		if (param.empty())
 		{
-			send_reply(fd, 461, { nickname, "MODE" }, "Key parameter required");
+			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 			return 0;
 		}
 		channel.set_key(param);
@@ -231,13 +231,13 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
 		if (param.empty())
 		{
-			send_reply(fd, 461, { nickname, "MODE" }, "Nick parameter required");
+			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 			return 0;
 		}
 		int target_fd = find_fd_by_nickname(param);
 		if (target_fd == -1 || !channel.has_member(target_fd))
 		{
-			send_reply(fd, ERR_USERNOTINCHANNEL, { nickname, param }, "Is not on that channel");
+			client.send(buildReply(client, ERR_USERNOTINCHANNEL, {param, chan_name}));
 			return 0;
 		}
 		channel.add_operator(target_fd);
@@ -246,13 +246,13 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
 		if (param.empty())
 		{
-			send_reply(fd, 461, { nickname, "MODE" }, "Nick parameter required");
+			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 			return 0;
 		}
 		int target_fd = find_fd_by_nickname(param);
 		if (target_fd == -1 || !channel.has_member(target_fd))
 		{
-			send_reply(fd, ERR_USERNOTINCHANNEL, { nickname, param }, "Is not on that channel");
+			client.send(buildReply(client, ERR_USERNOTINCHANNEL, {param, "MODE"}));
 			return 0;
 		}
 		channel.remove_operator(target_fd);
@@ -261,13 +261,13 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
         if (param.empty() || !std::all_of(param.begin(), param.end(), ::isdigit))
         {
-            send_reply(fd, 461, { nickname, "MODE" }, "Numeric parameter required");
+			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
             return 0;
         }
         int limit = std::stoi(param);
         if (limit < 0)
         {
-            send_reply(fd, ERR_UMODEUNKNOWNFLAG, { nickname, "MODE" }, "Invalid limit");
+			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
             return 0;
         }
         channel.set_limit(limit);
@@ -278,20 +278,12 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	}
 	else
 	{
-		send_reply(fd, ERR_UNKNOWNMODE, { nickname, mode }, "Unknown MODE");
+		client.send(buildReply(client, ERR_UNKNOWNMODE, {mode}));
 		return 0;
 	}
-
-	// Broadcast MODE change
-	std::string broadcast_msg = ":" + nickname + "!user@host MODE #" + chan_name + " " + mode;
-	if (!param.empty())
-		broadcast_msg += " " + param;
-	broadcast_msg += "\r\n";
-	channel.broadcast_message(broadcast_msg, -1);
-
+	channel.broadcast_message(buildUserMode(client, chan_name, mode, param), -1);
 	return 0;
 }
-
 
 int Server::find_fd_by_nickname(std::string const &nickname) const
 {
@@ -301,17 +293,6 @@ int Server::find_fd_by_nickname(std::string const &nickname) const
 			return client.first;
 	}
 	return -1;
-}
-
-void Server::send_raw(int fd, const std::string& line)
-{
-    std::string s = line;
-    _clients.at(fd).send(s);
-}
-
-std::string Server::make_prefix(const Client& c)
-{
-    return c.get_nickname() + "!" + c.get_username() + "@" + _hostname;
 }
 
 // ":server_name 001 nick :Welcome to the Internet Relay Network\r\n"
@@ -357,7 +338,7 @@ std::string Server::buildAction(Client &client, const std::string &command, cons
 			{
 				oss << " :" << params[i];
 				break;
-			}			
+			}
 			oss << " " << params[i];
 		}
 	}
@@ -373,10 +354,15 @@ std::string Server::buildServerMode(const std::string &channel, const std::strin
 	return oss.str();
 }
 
-std::string Server::buildUserMode(const Client &client, const std::string &channel, const std::string &flag, const std::string &targetNick)
+std::string Server::buildUserMode(const Client &client, const std::string &channel, const std::string &flag, const std::string &optParam)
 {
 	std::ostringstream oss;
-	oss << ":" << client.get_nickname() << "!" << client.get_username() << "@" << client.get_hostname() << " MODE " << channel << " " << flag << " " << targetNick << "\r\n";
+	oss << ":" << client.get_nickname() << "!" << client.get_username() << "@" << client.get_hostname() << " MODE " << channel << " " << flag;
+	if (!optParam.empty())
+	{
+		oss << " " << optParam;
+	}
+	oss << "\r\n";
 	return oss.str();
 }
 
