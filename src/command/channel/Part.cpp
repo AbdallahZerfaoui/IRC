@@ -8,7 +8,7 @@ int Server::handle_part(int fd, const ParsedMessage& msg)
 
     if (msg.params.empty() || msg.params.size() > 2)
     {
-        send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "PART" }, "Wrong number of parameters");
+		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"PART"}));
         return 0;
     }
 
@@ -22,25 +22,24 @@ int Server::handle_part(int fd, const ParsedMessage& msg)
 	{
 		if (chans[i].empty() || chans[i][0] != '#')
         {
-            send_reply(fd, ERR_BADCHANMASK, { nickname, "PART" }, "Bad channel mask");
+			client.send(buildReply(client, ERR_BADCHANMASK, {"PART"}));
             continue;
         }
-		chans[i].erase(0, 1); // Remove the '#' character
+		chans[i].erase(0, 1);
 
 		auto it = _channels.find(chans[i]);
 		if (it == _channels.end())
 		{
-			send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, "PART", "#" + chans[i] }, "No such channel");
+			client.send(buildReply(client, ERR_NOSUCHCHANNEL, {"PART", "#" + chans[i]}));
 			continue ;
 		}
 
 		if (!it->second.remove_client(fd))
 		{
-			send_reply(fd, ERR_NOTONCHANNEL, { nickname, "PART", "#" + chans[i] }, "You're not on that channel");
+			client.send(buildReply(client, ERR_NOTONCHANNEL, {"PART", "#" + chans[i]}));
 			continue ;
 		}
-		std::string message = ':' + _clients.at(fd).get_nickname() + "@host PRIVMSG #" + _channels.at(chans[i]).get_name() + " :" + reason + "\r\n";
-		_channels.at(chans[i]).broadcast_message(message, fd);
+		_channels.at(chans[i]).broadcast_message(buildAction(client, "PART", { "#" + chans[i], reason }), fd);
 
 		if (it->second.get_members().empty())
 			_channels.erase(it);
