@@ -70,7 +70,7 @@ class Server
 		int handle_privmsg(int fd, const ParsedMessage& msg);
 		int handle_part(int fd, const ParsedMessage& msg);
 		int handle_join(int fd, const ParsedMessage& msg);
-		int handle_help(int fd, const ParsedMessage& msg);
+		// int handle_help(int fd, const ParsedMessage& msg);
 		int handle_channels(int fd, const ParsedMessage& msg);
 		int handle_quit(int fd, const ParsedMessage& msg);
 		int handle_ping(int fd, const ParsedMessage& msg);

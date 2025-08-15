@@ -8,7 +8,7 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
 	std::string nickname = client.get_nickname();
 	if (msg.params.size() < 2)
 	{
-		send_reply(fd, ERR_NORECIPIENT, { nickname, "PRIVMSG" }, "No recipient given");
+		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"PRIVMSG"}));
 		return 0;
 	}
 
@@ -26,31 +26,29 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
             auto it = _channels.find(chan);
             if (it == _channels.end())
             {
-                send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, targets[i] }, "No such channel");
+				client.send(buildReply(client, ERR_NOSUCHCHANNEL, {nickname, targets[i]}));
                 continue;
             }
 
             Channel& ch = it->second;
             if (!ch.has_member(fd))
             {
-                send_reply(fd, ERR_CANNOTSENDTOCHAN, { nickname, targets[i] }, "Cannot send to channel");
+				client.send(buildReply(client, ERR_CANNOTSENDTOCHAN, {nickname, targets[i]}));
                 continue;
             }
 
-			std::string message1 = ':' + _clients.at(fd).get_nickname() + "!user@host PRIVMSG #" + _channels.at(chan).get_name() + " :" + text + "\r\n";
-            ch.broadcast_message(message1, fd);
+			ch.broadcast_message(buildAction(client, "PRIVMSG", {targets[i], text}), fd);
             continue;
         }
 
 		int fdtg = find_fd_by_nickname(targets[i]);
 		if (fdtg == -1)
 		{
-			send_reply(fd, ERR_NOSUCHNICK, { nickname, "PRIVMSG", targets[i] }, "No such nickname");
+			client.send(buildReply(client, ERR_NOSUCHNICK, {targets[i]}));
 			continue ;
 		}
 
-		std::string message = ':' + client.get_nickname() + "!user@host PRIVMSG " + targets[i] + " :" + text + "\r\n";
-		_clients.at(fdtg).send(message);
+		_clients.at(fdtg).send(buildAction(client, "PRIVMSG", {targets[i], text}));
 	}
 	return 0;
 }

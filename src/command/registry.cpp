@@ -20,18 +20,18 @@ const std::unordered_map<std::string, Server::CommandHandler> Server::handlers =
 	{"JOIN", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_join(fd, msg);
     }},
-	{"HELP", [](Server& srv, int fd, const ParsedMessage& msg) {
-        return srv.handle_help(fd, msg);
-    }},
-	{"CHANNELS", [](Server& srv, int fd, const ParsedMessage& msg) {
-        return srv.handle_channels(fd, msg);
-    }},
+	// {"HELP", [](Server& srv, int fd, const ParsedMessage& msg) {
+    //     return srv.handle_help(fd, msg);
+    // }},
+	// {"CHANNELS", [](Server& srv, int fd, const ParsedMessage& msg) {
+    //     return srv.handle_channels(fd, msg);
+    // }},
 	{"QUIT", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_quit(fd, msg);
     }},
-	{"PING", [](Server& srv, int fd, const ParsedMessage& msg) {
-        return srv.handle_ping(fd, msg);
-    }},
+	// {"PING", [](Server& srv, int fd, const ParsedMessage& msg) {
+    //     return srv.handle_ping(fd, msg);
+    // }},
 	{"MODE", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_mode(fd, msg);
     }},
