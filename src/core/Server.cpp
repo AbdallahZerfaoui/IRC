@@ -5,11 +5,13 @@ bool Server::_signal_received = false;
 
 std::map<ReplyCode, std::string> Server::_reply_messages = {
     // Registration
+	{RPL_NULL,                ""},                    // 0
     {RPL_WELCOME,              "Welcome to the Internet Relay Network"}, // 001
 
     // TOPIC
     {RPL_NOTOPIC,              "No topic is set"},                       // 331
     {RPL_TOPIC,                ""},                    // 332
+	{RPL_INVITING,           ""},                              // 341
 
 
     // Errors for users/channels
@@ -312,13 +314,28 @@ std::string Server::make_prefix(const Client& c)
     return c.get_nickname() + "!" + c.get_username() + "@" + _hostname;
 }
 
-std::string Server::buildReply(ReplyCode code, const std::string &cmd, const Client &client, const std::string &msg)
+// ":server_name 001 nick :Welcome to the Internet Relay Network\r\n"
+std::string Server::buildReply(const Client &client, ReplyCode code, const std::vector<std::string> &params, const std::string &msg)
 {
 	// // Build a reply message in the format expected by IRC clients
 	// e.g.: ":server_name 001 nick :Welcome to the Internet Relay Network\r\n"
 	std::ostringstream oss;
 	std::string reply_msg = msg.empty() ? _reply_messages[code] : msg;
-	oss << ":" << _server_name << " " << std::setw(3) << std::setfill('0') << code << " " << client.get_nickname() << " " << cmd << " :" << reply_msg << "\r\n";
+	oss << ":" << _server_name << " " << std::setw(3) << std::setfill('0') << static_cast<int>(code) << " " << client.get_nickname();
+	
+	for (auto &i : params)
+	{
+		if (!i.empty())
+			oss << " " << i;
+	}
+	
+	if (code != RPL_NULL)
+	{
+		if (!reply_msg.empty())
+			oss << " :" << reply_msg;
+	}
+	
+	oss << "\r\n";
 	return oss.str();
 }
 
@@ -326,7 +343,9 @@ std::string Server::buildReply(ReplyCode code, const std::string &cmd, const Cli
 std::string Server::buildAction(Client &client, const std::string &command, const std::string &target)
 {
 	std::ostringstream oss;
-	oss << ":" + client.get_old_nickname() << "!" << client.get_username() << "@" + client.get_hostname() << " " << command << " :" << target << "\r\n";
+	std::string nick = command == "NICK" ? client.get_old_nickname() : client.get_nickname();
+	std::string target2 = command == "JOIN" ? target : ":" + target;
+	oss << ":" + nick << "!" << client.get_username() << "@" + client.get_hostname() << " " << command << " " << target2 << "\r\n";
 	return oss.str();
 }
 

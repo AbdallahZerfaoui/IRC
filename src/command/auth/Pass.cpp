@@ -12,7 +12,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			client.send(buildReply(ERR_ALREADYREGISTERED, "PASS", client));
+			client.send(buildReply(client, ERR_ALREADYREGISTERED, {"PASS"}));
 		}
 		catch (const std::exception& e)
 		{
@@ -25,7 +25,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			client.send(buildReply(ERR_NEEDMOREPARAMS, "PASS", client));
+			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"PASS"}));
 		}
 		catch (const std::exception& e)
 		{
@@ -38,7 +38,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 	{
 		try
 		{
-			client.send(buildReply(ERR_PASSWDMISMATCH, "PASS", client));
+			client.send(buildReply(client, ERR_PASSWDMISMATCH, {"PASS"}));
 		}
 		catch (const std::exception& e)
 		{

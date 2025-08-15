@@ -9,7 +9,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty())
 	{
-		client.send(buildReply(ERR_NEEDMOREPARAMS, "JOIN", client));
+		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"JOIN"}));
 		return 0;
 	}
 
@@ -21,7 +21,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		const std::string& raw = chans[i];
 		if (raw.empty() || raw[0] != '#')
 		{
-			client.send(buildReply(ERR_BADCHANMASK, "JOIN", client));
+			client.send(buildReply(client, ERR_BADCHANMASK, {"JOIN"}));
 			continue;
 		}
 		std::string name = raw.substr(1); // Remove the '#' character
@@ -35,21 +35,21 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
         // if the channel already exists and the client is already a member
         if (ch.has_member(fd))
         {
-			client.send(buildReply(ERR_USERONCHANNEL, "#" + ch.get_name(), client));
+			client.send(buildReply(client, ERR_USERONCHANNEL, {"#" + ch.get_name()}));
             continue;
         }
 
 		// If the channel requires a key and the key is not provided or incorrect
 		if (ch.requires_key() && (key.empty() || key != ch.get_channel_key()))
 		{
-			client.send(buildReply(ERR_BADCHANNELKEY, "#" + ch.get_name(), client));
+			client.send(buildReply(client, ERR_BADCHANNELKEY, {"#" + ch.get_name()}));
 			continue;
 		}
 
 		// If the channel is invite-only and the user was not invited
 		if (ch.is_invite_only() && !ch.is_invited(fd))
 		{
-			client.send(buildReply(ERR_INVITEONLYCHAN, "#" + ch.get_name(), client));
+			client.send(buildReply(client, ERR_INVITEONLYCHAN, {"#" + ch.get_name()}));
             continue;
         }
 
@@ -57,7 +57,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
         // AND the user was not invited
         if (ch.get_limit() != -1 && (int)ch.get_members().size() >= ch.get_limit() && !ch.is_invited(fd))
 		{
-			client.send(buildReply(ERR_CHANNELISFULL, "#" + ch.get_name(), client));
+			client.send(buildReply(client, ERR_CHANNELISFULL, {"#" + ch.get_name()}));
             continue;
         }
 
@@ -73,9 +73,9 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		}
 
 		if (ch.topic().empty())
-			client.send(buildReply(RPL_NOTOPIC, "#" + ch.get_name(), client));
+			client.send(buildReply(client, RPL_NOTOPIC, {"#" + ch.get_name()}));
 		else
-			client.send(buildReply(RPL_TOPIC, "#" + ch.get_name(), client, ch.topic()));
+			client.send(buildReply(client, RPL_TOPIC, {"#" + ch.get_name(), ch.topic()}));
 	}
 	return 0;
 }

@@ -3,6 +3,7 @@
 
 enum ReplyCode {
     // Registration
+	RPL_NULL               = 0, // Special code for no reply
     RPL_WELCOME            = 1,
 
     // TOPIC
@@ -11,6 +12,7 @@ enum ReplyCode {
 	RPL_HELPSTART		   = 704,
 	RPL_HELPTXT			   = 705,
 	RPL_ENDOFHELP		   = 706,
+	RPL_INVITING		   = 341,
 
     // Errors for users/channels
     ERR_NOSUCHNICK         = 401,

@@ -8,7 +8,7 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 
 	if (msg.params.size() < 2)
 	{
-		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "INVITE" }, "Not enough parameters");
+		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"INVITE"}));
 		return 0;
 	}
 
@@ -17,7 +17,7 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		send_reply(fd, ERR_BADCHANMASK, { nickname, "INVITE" }, "Bad channel name");
+		client.send(buildReply(client, ERR_BADCHANMASK, {"INVITE"}));
 		return 0;
 	}
 
@@ -25,35 +25,37 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, chan_name }, "No such channel");
+		client.send(buildReply(client, ERR_NOSUCHCHANNEL, {"#" + chan_name}));
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.is_operator(fd))
 	{
-		send_reply(fd, ERR_CHANOPRIVSNEEDED, { nickname, chan_name }, "You're not channel operator");
+		client.send(buildReply(client, ERR_CHANOPRIVSNEEDED, {"#" + chan_name}));
 		return 0;
 	}
 
 	int target_fd = find_fd_by_nickname(target_nick);
 	if (target_fd == -1)
 	{
-		send_reply(fd, ERR_NOSUCHNICK, { nickname, target_nick }, "No such nick");
+		client.send(buildReply(client, ERR_NOSUCHNICK, {target_nick}));
 		return 0;
 	}
 
 	if (channel.has_member(target_fd))
 	{
-		send_reply(fd, ERR_USERONCHANNEL, { nickname, target_nick, chan_name }, "User already on channel");
+		client.send(buildReply(client, ERR_USERONCHANNEL, {target_nick}));
 		return 0;
 	}
 
     channel.add_invited_client(target_fd);
+	// Send RPL_INVITING to the inviting user
+	client.send(buildReply(client, RPL_INVITING, {target_nick, "#" + chan_name}));
     
 	// send it to the invited user
-	std::string invite_msg = ":" + nickname + "!user@host INVITE " + target_nick + " :" + chan_name + "\r\n";
-	_clients.at(target_fd).send(invite_msg);
+	// std::string invite_msg = ":" + nickname + "!user@host INVITE " + target_nick + " :" + chan_name + "\r\n";
+	_clients.at(target_fd).send(buildAction(_clients.at(target_fd), "INVITE", "#" + chan_name));
 
 	return 0;
 }
