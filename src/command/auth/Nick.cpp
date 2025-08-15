@@ -23,7 +23,7 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 
 	if (msg.params.empty() || msg.params[0].empty())
 	{
-		client.send(buildReply(ERR_NONICKNAMEGIVEN, "NICK", nickname));
+		client.send(buildReply(ERR_NONICKNAMEGIVEN, "NICK", client));
 		return 0;
 	}
 
@@ -37,27 +37,26 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 
 	if (!valid_nick)
 	{
-		client.send(buildReply(ERR_ERRONEUSNICKNAME, "NICK", nickname));
+		client.send(buildReply(ERR_ERRONEUSNICKNAME, "NICK", client));
 		return 0;
 	}
 
 	if (is_duplicate_nickname(nick))
 	{
-		client.send(buildReply(ERR_NICKNAMEINUSE, "NICK", nickname));
+		client.send(buildReply(ERR_NICKNAMEINUSE, "NICK", client));
 		return 0;
 	}
 
 	std::string old = client.get_nickname();
-	const bool is_change = !old.empty() && old != nick;
+	const bool is_change = old != nick;
 	_clients.at(fd).set_passed_nick(nick);
 
 	if (is_change)
 	{
 		// RFC: ":<oldnick>!user@host NICK :<newnick>"
-		// std::string line = ":" + prefix + " NICK :" + nick + "\r\n";
-		// std::string line = ":" + old + "!" + client.get_username() + "@" + "localhost" + " NICK :" + nick + "\r\n";
-		std::string line = ":" + old + "!" + client.get_username() + "@" + _hostname + " NICK :" + nick + "\r\n";
-		send_raw(fd, line);
+		std::string line = buildAction(client, "NICK", nick);
+		// std::string line = ":" + old + "!" + client.get_username() + "@" + _hostname + " NICK :" + nick + "\r\n";
+		client.send(line);
 		for (const auto &ch : _channels)
 		{
 			if (ch.second.has_member(fd))

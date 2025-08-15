@@ -32,6 +32,11 @@ std::string const Client::get_nickname() const
 	return _nickname.empty() ? "*" : _nickname;
 }
 
+std::string const Client::get_old_nickname() const
+{
+	return old_nickname.empty() ? "*" : old_nickname;
+}
+
 std::string const Client::get_realname() const
 {
 	return _realname.empty() ? "real" : _realname;
@@ -55,6 +60,7 @@ void Client::set_passed_pass(std::string const &pass)
 
 void Client::set_passed_nick(std::string const &nick)
 {
+	old_nickname = _nickname;
 	_nickname = nick;
 	passed_nick = true;
 }

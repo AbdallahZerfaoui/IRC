@@ -26,6 +26,7 @@ private:
 	
 	// Authentication data
 	std::string _nickname = ""; // from NICK
+	std::string old_nickname = ""; // for NICK change
 	std::string _username = ""; // from USER
 	std::string _realname = "";  // from USER after ':'
 	std::string _password = ""; // from PASS
@@ -51,6 +52,7 @@ public:
     void close();
 	bool get_passed_pass() const;
 	bool get_passed_nick() const;
+	std::string const get_old_nickname() const;
 	bool get_passed_user() const;
 	bool get_passed_realname() const;
 

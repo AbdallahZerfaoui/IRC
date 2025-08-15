@@ -9,7 +9,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty())
 	{
-		client.send(buildReply(ERR_NEEDMOREPARAMS, "JOIN", nickname));
+		client.send(buildReply(ERR_NEEDMOREPARAMS, "JOIN", client));
 		return 0;
 	}
 
@@ -21,7 +21,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		const std::string& raw = chans[i];
 		if (raw.empty() || raw[0] != '#')
 		{
-			client.send(buildReply(ERR_BADCHANMASK, "JOIN", nickname));
+			client.send(buildReply(ERR_BADCHANMASK, "JOIN", client));
 			continue;
 		}
 		std::string name = raw.substr(1); // Remove the '#' character
@@ -35,21 +35,21 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
         // if the channel already exists and the client is already a member
         if (ch.has_member(fd))
         {
-			client.send(buildReply(ERR_USERONCHANNEL, ch.get_name(), nickname));
+			client.send(buildReply(ERR_USERONCHANNEL, "#" + ch.get_name(), client));
             continue;
         }
 
 		// If the channel requires a key and the key is not provided or incorrect
 		if (ch.requires_key() && (key.empty() || key != ch.get_channel_key()))
 		{
-			client.send(buildReply(ERR_BADCHANNELKEY, ch.get_name(), nickname));
+			client.send(buildReply(ERR_BADCHANNELKEY, "#" + ch.get_name(), client));
 			continue;
 		}
 
 		// If the channel is invite-only and the user was not invited
 		if (ch.is_invite_only() && !ch.is_invited(fd))
 		{
-			client.send(buildReply(ERR_INVITEONLYCHAN, ch.get_name(), nickname));
+			client.send(buildReply(ERR_INVITEONLYCHAN, "#" + ch.get_name(), client));
             continue;
         }
 
@@ -57,31 +57,25 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
         // AND the user was not invited
         if (ch.get_limit() != -1 && (int)ch.get_members().size() >= ch.get_limit() && !ch.is_invited(fd))
 		{
-			client.send(buildReply(ERR_CHANNELISFULL, ch.get_name(), nickname));
+			client.send(buildReply(ERR_CHANNELISFULL, "#" + ch.get_name(), client));
             continue;
         }
 
 		// Finally add the client to the channel
 		ch.add_client(fd);
-		buildReply(RPL_, ch.get_name(), nickname);
-		std::string joinLine = ":" + make_prefix(client) + " JOIN #" + name + "\r\n";
-        // send_raw(fd, joinLine);
-		ch.broadcast_message(joinLine, fd);
+		// Send the JOIN message to the client and broadcast it to other members
+		ch.broadcast_message(buildAction(client, "JOIN", "#" + name), -1);
 
 		if (ch.get_members().size() == 1)
 		{
-            std::string modeLine = ":" + _hostname + " MODE #" + name + " +nt\r\n";
-            // ch.broadcast_message(modeLine, -1);
-
             ch.add_operator(fd);
-            std::string opLine = ":" + _hostname + " MODE #" + name + " +o " + nickname + "\r\n";
-            // ch.broadcast_message(opLine, -1);
+            ch.broadcast_message(buildServerMode("#" + name, "+o", nickname), -1);
 		}
 
 		if (ch.topic().empty())
-			client.send(buildReply(RPL_NOTOPIC, ch.get_name(), "No topic is set"));
+			client.send(buildReply(RPL_NOTOPIC, "#" + ch.get_name(), client));
 		else
-			send_reply(fd, 332, { nickname, "#" + name }, ch.topic());
+			client.send(buildReply(RPL_TOPIC, "#" + ch.get_name(), client, ch.topic()));
 	}
 	return 0;
 }

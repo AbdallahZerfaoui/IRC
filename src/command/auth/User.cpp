@@ -8,13 +8,13 @@ int Server::parse_user(int fd, const ParsedMessage &msg)
 
 	if (client.get_passed_user())
 	{
-		client.send(buildReply(ERR_ALREADYREGISTERED, "USER", nickname));
+		client.send(buildReply(ERR_ALREADYREGISTERED, "USER", client));
 		return 0;
 	}
 
 	if (msg.params.size() < 4)
 	{
-		client.send(buildReply(ERR_NEEDMOREPARAMS, "USER", nickname));
+		client.send(buildReply(ERR_NEEDMOREPARAMS, "USER", client));
 		return 0;
 	}
 

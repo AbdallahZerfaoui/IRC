@@ -97,7 +97,10 @@ class Server
 		void enable_pollout(int fd, bool enable);
 		std::string make_prefix(const Client& c);
 		void send_raw(int fd, const std::string& line);
-		std::string buildReply(ReplyCode code, const std::string& cmd, const std::string& nick);
+		std::string buildReply(ReplyCode code, const std::string &cmd, const Client &client, const std::string &msg = "");
+		std::string buildAction(Client &client, const std::string &command, const std::string &target);
+		std::string buildServerMode(const std::string &channel, const std::string &flag, const std::string &targetNick);
+		std::string buildUserMode(const Client &client, const std::string &channel, const std::string &flag, const std::string &targetNick);
 
 		// void handle_new_connection();
 		// void handle_client_data(int client_fd);

@@ -9,7 +9,7 @@ std::map<ReplyCode, std::string> Server::_reply_messages = {
 
     // TOPIC
     {RPL_NOTOPIC,              "No topic is set"},                       // 331
-    {RPL_TOPIC,                "<channel> :<topic>"},                    // 332
+    {RPL_TOPIC,                ""},                    // 332
 
 
     // Errors for users/channels
@@ -312,20 +312,35 @@ std::string Server::make_prefix(const Client& c)
     return c.get_nickname() + "!" + c.get_username() + "@" + _hostname;
 }
 
-std::string Server::buildReply(ReplyCode code, const std::string& cmd, const std::string& nick)
+std::string Server::buildReply(ReplyCode code, const std::string &cmd, const Client &client, const std::string &msg)
 {
 	// // Build a reply message in the format expected by IRC clients
 	// e.g.: ":server_name 001 nick :Welcome to the Internet Relay Network\r\n"
 	std::ostringstream oss;
-	oss << ":" << _server_name << " " << std::setw(3) << std::setfill('0') << code << " " << nick << " " << cmd << " :" << _reply_messages[code] << "\r\n";
+	std::string reply_msg = msg.empty() ? _reply_messages[code] : msg;
+	oss << ":" << _server_name << " " << std::setw(3) << std::setfill('0') << code << " " << client.get_nickname() << " " << cmd << " :" << reply_msg << "\r\n";
 	return oss.str();
 }
 
 // std::string line = ":" + old + "!" + client.get_username() + "@" + _hostname + " NICK :" + nick + "\r\n";
-std::string Server::buildAction(User &user, const std::string &command, const std::string &target)
+std::string Server::buildAction(Client &client, const std::string &command, const std::string &target)
 {
 	std::ostringstream oss;
-	oss << ":" + user.get_nickname() << "!" << user.get_username() << "@" + user.get_hostname() << " " << command << " :" << target << "\r\n";
+	oss << ":" + client.get_old_nickname() << "!" << client.get_username() << "@" + client.get_hostname() << " " << command << " :" << target << "\r\n";
+	return oss.str();
+}
+
+std::string Server::buildServerMode(const std::string &channel, const std::string &flag, const std::string &targetNick)
+{
+	std::ostringstream oss;
+	oss << ":" << _server_name << " MODE " << channel << " " << flag << " " << targetNick << "\r\n";
+	return oss.str();
+}
+
+std::string Server::buildUserMode(const Client &client, const std::string &channel, const std::string &flag, const std::string &targetNick)
+{
+	std::ostringstream oss;
+	oss << ":" << client.get_nickname() << "!" << client.get_username() << "@" << client.get_hostname() << " MODE " << channel << " " << flag << " " << targetNick << "\r\n";
 	return oss.str();
 }
 
