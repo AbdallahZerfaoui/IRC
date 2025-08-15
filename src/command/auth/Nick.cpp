@@ -54,7 +54,7 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 	if (is_change)
 	{
 		// RFC: ":<oldnick>!user@host NICK :<newnick>"
-		std::string line = buildAction(client, "NICK", nick);
+		std::string line = buildAction(client, "NICK", {nick});
 		client.send(line);
 		for (const auto &ch : _channels)
 		{

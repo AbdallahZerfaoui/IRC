@@ -54,8 +54,7 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 	client.send(buildReply(client, RPL_INVITING, {target_nick, "#" + chan_name}));
     
 	// send it to the invited user
-	// std::string invite_msg = ":" + nickname + "!user@host INVITE " + target_nick + " :" + chan_name + "\r\n";
-	_clients.at(target_fd).send(buildAction(_clients.at(target_fd), "INVITE", "#" + chan_name));
+	_clients.at(target_fd).send(buildAction(client, "INVITE", { _clients.at(target_fd).get_nickname(), "#" + chan_name}));
 
 	return 0;
 }

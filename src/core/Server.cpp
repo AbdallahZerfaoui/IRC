@@ -315,37 +315,54 @@ std::string Server::make_prefix(const Client& c)
 }
 
 // ":server_name 001 nick :Welcome to the Internet Relay Network\r\n"
-std::string Server::buildReply(const Client &client, ReplyCode code, const std::vector<std::string> &params, const std::string &msg)
+std::string Server::buildReply(const Client &client, ReplyCode code, const std::vector<std::string> &params)
 {
 	// // Build a reply message in the format expected by IRC clients
 	// e.g.: ":server_name 001 nick :Welcome to the Internet Relay Network\r\n"
 	std::ostringstream oss;
-	std::string reply_msg = msg.empty() ? _reply_messages[code] : msg;
+	std::string reply_msg = _reply_messages[code];
+
 	oss << ":" << _server_name << " " << std::setw(3) << std::setfill('0') << static_cast<int>(code) << " " << client.get_nickname();
 	
-	for (auto &i : params)
+	for (size_t i = 0; i < params.size(); i++)
 	{
-		if (!i.empty())
-			oss << " " << i;
+		if (!params[i].empty())
+			oss << " " << params[i];
 	}
 	
-	if (code != RPL_NULL)
-	{
-		if (!reply_msg.empty())
-			oss << " :" << reply_msg;
-	}
+	if (!reply_msg.empty())
+		oss << " :" << reply_msg;
 	
 	oss << "\r\n";
 	return oss.str();
 }
 
 // std::string line = ":" + old + "!" + client.get_username() + "@" + _hostname + " NICK :" + nick + "\r\n";
-std::string Server::buildAction(Client &client, const std::string &command, const std::string &target)
+std::string Server::buildAction(Client &client, const std::string &command, const std::vector<std::string> &params)
 {
 	std::ostringstream oss;
 	std::string nick = command == "NICK" ? client.get_old_nickname() : client.get_nickname();
-	std::string target2 = command == "JOIN" ? target : ":" + target;
-	oss << ":" + nick << "!" << client.get_username() << "@" + client.get_hostname() << " " << command << " " << target2 << "\r\n";
+	// ":<server_name>!<client_nick>!<username>@<hostname>"
+	oss << ":" + nick << "!" << client.get_username() << "@" + client.get_hostname();
+	
+	// INVITE, KICK, PART, QUIT, TOPIC, MODE, etc.
+	oss << " " << command;
+
+	for (size_t i = 0; i < params.size(); i++)
+	{
+		if (!params[i].empty())
+		{
+			// If the parameter contains spaces and if it's the last parameter, we need to quote it
+			if (i == params.size() - 1 && params[i].find(' ') != std::string::npos)
+			{
+				oss << " :" << params[i];
+				break;
+			}			
+			oss << " " << params[i];
+		}
+	}
+
+	oss << "\r\n";
 	return oss.str();
 }
 

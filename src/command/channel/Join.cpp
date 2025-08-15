@@ -24,14 +24,14 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 			client.send(buildReply(client, ERR_BADCHANMASK, {"JOIN"}));
 			continue;
 		}
-		std::string name = raw.substr(1); // Remove the '#' character
+		std::string name = raw.substr(1);
 		std::string key = (i < keys.size()) ? keys[i] : "";
 
 		// Add the channel to the channels map, if it doesn't exist
 		if (!_channels.count(name))
 			_channels.emplace(name, Channel(name, _clients));
-
 		Channel& ch = _channels.at(name);
+
         // if the channel already exists and the client is already a member
         if (ch.has_member(fd))
         {
@@ -61,10 +61,10 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
             continue;
         }
 
-		// Finally add the client to the channel
 		ch.add_client(fd);
+		
 		// Send the JOIN message to the client and broadcast it to other members
-		ch.broadcast_message(buildAction(client, "JOIN", "#" + name), -1);
+		ch.broadcast_message(buildAction(client, "JOIN", {"#" + name}), -1);
 
 		if (ch.get_members().size() == 1)
 		{
