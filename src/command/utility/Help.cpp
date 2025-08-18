@@ -27,6 +27,6 @@
 //     send_reply(fd, RPL_HELPTXT, {nickname, "*"}, "TOPIC <#channel> <new_topic>                             :get or set channel topic");
 //     send_reply(fd, RPL_HELPTXT, {nickname, "*"}, "PING <server>                                            :ping the server to check connection");
     
-// 	send_reply(fd, RPL_ENDOFHELP, {nickname, "*"}, "*** End of HELP ***");
+// 	send_reply(fd, RPL_ENDOFHELP, {nickname, "*"}, "*** End of HELP ***\n");
 // 	return 0;
 // }

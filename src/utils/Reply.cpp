@@ -15,19 +15,3 @@ void Server::enable_pollout(int fd, bool enable)
 		}
 	}
 }
-
-
-void Server::send_reply(int fd, int code, const std::vector<std::string> &params, const std::string &msg)
-{
-	std::ostringstream oss;
-	oss << ':' << _hostname << ' ' << std::setw(3) << std::setfill('0') << code << ' ';
-	for (size_t i = 0; i < params.size(); ++i)
-	{
-		if (i)
-			oss << ' ';
-		oss << params[i];
-	}
-	oss << BLUE << BOLD << " :" << msg << RESET << "\r\n";
-	std::string text = oss.str();
-	_clients.at(fd).send(text);
-}

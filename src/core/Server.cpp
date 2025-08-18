@@ -210,80 +210,76 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 		return 0;
 	}
 
-	if (mode == "+i")
-		channel.set_invite_only(true);
-	else if (mode == "-i")
-		channel.set_invite_only(false);
-	else if (mode == "+t")
-		channel.set_topic_protected(true);
-	else if (mode == "-t")
-		channel.set_topic_protected(false);
-	else if (mode == "+k")
-	{
-		if (param.empty())
-		{
-			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
-			return 0;
-		}
-		channel.set_key(param);
-	}
-	else if (mode == "-k")
-	{
-		channel.remove_key();
-	}
-	else if (mode == "+o")
-	{
-		if (param.empty())
-		{
-			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
-			return 0;
-		}
-		int target_fd = find_fd_by_nickname(param);
-		if (target_fd == -1 || !channel.has_member(target_fd))
-		{
-			client.send(buildReply(client, ERR_USERNOTINCHANNEL, {param, chan_name}));
-			return 0;
-		}
-		channel.add_operator(target_fd);
-	}
-	else if (mode == "-o")
-	{
-		if (param.empty())
-		{
-			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
-			return 0;
-		}
-		int target_fd = find_fd_by_nickname(param);
-		if (target_fd == -1 || !channel.has_member(target_fd))
-		{
-			client.send(buildReply(client, ERR_USERNOTINCHANNEL, {param, chan_name}));
-			return 0;
-		}
-		channel.remove_operator(target_fd);
-	}
-    else if (mode == "+l")
-	{
-        if (param.empty() || !std::all_of(param.begin(), param.end(), ::isdigit))
-        {
-			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
-            return 0;
-        }
-        int limit = std::stoi(param);
-        if (limit < 0)
-        {
-			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
-            return 0;
-        }
-        channel.set_limit(limit);
-	}
-	else if (mode == "-l")
-	{
-        channel.remove_limit();
-	}
-	else
+	if (mode.empty() || mode.size() != 2 || (mode[0] != '+' && mode[0] != '-'))
 	{
 		client.send(buildReply(client, ERR_UNKNOWNMODE, {mode}));
 		return 0;
+	}
+	
+	bool state = mode[0] == '+';
+	switch (mode[1])
+	{
+	case 'i':
+		channel.set_invite_only(state);
+		break;
+	case 't':
+		channel.set_topic_protected(state);
+		break;
+	case 'k':
+	{
+		if (param.empty())
+		{
+			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
+			return 0;
+		}
+		if (state)
+			channel.set_key(param);
+		else
+			channel.remove_key();
+		break;
+	}
+	case 'o':
+	{
+		if (param.empty())
+		{
+			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
+			return 0;
+		}
+		int target_fd = find_fd_by_nickname(param);
+		if (target_fd == -1 || !channel.has_member(target_fd))
+		{
+			client.send(buildReply(client, ERR_USERNOTINCHANNEL, {param, chan_name}));
+			return 0;
+		}
+		if (state)
+			channel.add_operator(target_fd);
+		else
+			channel.remove_operator(target_fd);
+		break;
+	}
+	case 'l':
+	{
+		if (param.empty() || !std::all_of(param.begin(), param.end(), ::isdigit))
+		{
+			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
+			return 0;
+		}
+		if (state)
+		{
+			int limit = std::stoi(param);
+			if (limit < 0)
+			{
+				client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
+				return 0;
+			}
+			channel.set_limit(limit);
+		}
+		else
+			channel.remove_limit();
+		break;
+	}
+	default:
+		break;
 	}
 	channel.broadcast_message(buildUserMode(client, chan_name, mode, param), -1);
 	return 0;

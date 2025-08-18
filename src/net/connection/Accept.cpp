@@ -22,17 +22,5 @@ void Server::handle_new_connection()
 	// We are interested in read events (client data) -> POLLIN
 	// Initialize revents to 0
 	_pollfds.push_back({client_fd, POLLIN, 0});
-	try
-	{	
-		send_reply(client_fd, RPL_HELPSTART, { _clients.at(client_fd).get_nickname(), "*" }, "*** Available Commands ***");
-		send_reply(client_fd, RPL_HELPTXT, { _clients.at(client_fd).get_nickname(), "*" }, "PASS <password>");
-		send_reply(client_fd, RPL_HELPTXT, { _clients.at(client_fd).get_nickname(), "*" }, "NICK <nickname>");
-		send_reply(client_fd, RPL_HELPTXT, { _clients.at(client_fd).get_nickname(), "*" }, "USER <username> 0 * :realname");
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << "Error sending message: " << e.what() << std::endl;
-		return ;
-	}
 	std::cout << GREEN << "New client added to poll list." << RESET << std::endl;
 }

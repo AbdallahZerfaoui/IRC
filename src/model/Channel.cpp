@@ -6,7 +6,7 @@
 /*   By: tkeil <tkeil@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/24 17:50:46 by tkeil             #+#    #+#             */
-/*   Updated: 2025/08/13 20:37:59 by tkeil            ###   ########.fr       */
+/*   Updated: 2025/08/18 12:41:53 by tkeil            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,30 +94,6 @@ std::set<int> Channel::get_members() const
 {
     return _members;
 }
-
-// void Server::send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg)
-// {
-//     std::ostringstream out;
-//     out << ':' << _hostname << ' ' << code << ' ';
-//     for (size_t i = 0; i < params.size(); ++i)
-// 	{
-//         if (i)
-// 			out << ' ';
-//         out << params[i];
-//     }
-//     out << " :" << msg << "\r\n";
-//     ssize_t bytes_sent = send(fd, out.str().c_str(), out.str().size(), 0);
-// 	if (bytes_sent == -1)
-//     {
-//         std::cerr << "send() failed for client FD " << fd << ": " << std::strerror(errno) << std::endl;
-//         throw std::runtime_error("send() failed");
-//     }
-//     if (static_cast<size_t>(bytes_sent) < msg.size())
-//     {
-//         std::cerr << "Warning: Partial send() for client FD " << fd << std::endl;
-//         throw std::runtime_error("Partial send(), incomplete message sent");
-//     }
-// }
 
 void Channel::broadcast_message(const std::string &message, int sender_fd) const
 {

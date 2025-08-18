@@ -73,14 +73,14 @@ class Server
 		int handle_part(int fd, const ParsedMessage& msg);
 		int handle_join(int fd, const ParsedMessage& msg);
 		// int handle_help(int fd, const ParsedMessage& msg);
-		int handle_channels(int fd, const ParsedMessage& msg);
+		// int handle_channels(int fd, const ParsedMessage& msg);
 		int handle_quit(int fd, const ParsedMessage& msg);
-		int handle_ping(int fd, const ParsedMessage& msg);
+		// int handle_ping(int fd, const ParsedMessage& msg);
 		int handle_mode(int fd, const ParsedMessage& msg);
 		int handle_kick(int fd, const ParsedMessage& msg);
 		int handle_invite(int fd, const ParsedMessage& msg);
 		int handle_topic(int fd, const ParsedMessage& msg);
-		int handle_cap(int fd, const ParsedMessage& msg);
+		// int handle_cap(int fd, const ParsedMessage& msg);
 		std::vector<std::string> split(const std::string& str, char delimiter);
 		
 	public:
@@ -95,7 +95,7 @@ class Server
 		static void handle_signal(int signum);
 		static void setup_signal_handlers();
 
-		void send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg);
+		// void send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg);
 		void enable_pollout(int fd, bool enable);
 		std::string buildReply(const Client &client, ReplyCode code, const std::vector<std::string> &params);
 		std::string buildAction(Client &client, const std::string &command, const std::vector<std::string> &params);
