@@ -24,14 +24,14 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		client.send(buildReply(client, ERR_NOSUCHCHANNEL, {"#" + chan_name}));
+		client.send(buildReply(client, ERR_NOSUCHCHANNEL, {chan_name}));
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.is_operator(fd))
 	{
-		client.send(buildReply(client, ERR_CHANOPRIVSNEEDED, {"#" + chan_name}));
+		client.send(buildReply(client, ERR_CHANOPRIVSNEEDED, {chan_name}));
 		return 0;
 	}
 
@@ -50,10 +50,10 @@ int Server::handle_invite(int fd, const ParsedMessage& msg)
 
     channel.add_invited_client(target_fd);
 	// Send RPL_INVITING to the inviting user
-	client.send(buildReply(client, RPL_INVITING, {target_nick, "#" + chan_name}));
+	client.send(buildReply(client, RPL_INVITING, {target_nick, chan_name}));
     
 	// send it to the invited user
-	_clients.at(target_fd).send(buildAction(client, "INVITE", { _clients.at(target_fd).get_nickname(), "#" + chan_name}));
+	_clients.at(target_fd).send(buildAction(client, "INVITE", { _clients.at(target_fd).get_nickname(), chan_name}));
 
 	return 0;
 }
