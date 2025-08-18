@@ -56,6 +56,6 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 	channel.set_topic(new_topic);
 
 	// Broadcast the message, that this client has changed the topic
-	channel.broadcast_message(buildAction(client, "TOPIC", {chan_name, new_topic}), fd);
+	channel.broadcast_message(buildAction(client, "TOPIC", {chan_name, new_topic}), -1);
 	return 0;
 }
