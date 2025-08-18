@@ -290,7 +290,7 @@ int Server::find_fd_by_nickname(std::string const &nickname) const
 	for (const auto &client : _clients)
 	{
 		if (client.second.get_nickname() == nickname)
-			return client.first;
+			return client.second.get_fd();
 	}
 	return -1;
 }

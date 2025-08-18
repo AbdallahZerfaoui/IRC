@@ -45,10 +45,9 @@ int Server::handle_kick(int fd, const ParsedMessage& msg)
 	}
 
 	channel.remove_client(target_fd);
-	channel.broadcast_message(buildAction(client, "PART", {chan_name, target_nick, reason}), fd);
 
-	std::string action = buildAction(client, "PART", {chan_name, reason });
-	channel.broadcast_message(action, fd);
+	std::string action = buildAction(_clients.at(target_fd), "PART", {chan_name, reason });
+	channel.broadcast_message(action, target_fd);
 	_clients.at(target_fd).send(action);
 	// delete the channel if it has no members left 
 	if (channel.get_members().empty())
