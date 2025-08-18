@@ -48,7 +48,12 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 		client.get_passed_nick() &&
 		client.get_passed_user())
 	{
+		// Send welcome sequence (001-005)
 		client.send(buildReply(client, RPL_WELCOME, {client.get_nickname()}));
+		client.send(buildReply(client, RPL_YOURHOST, {client.get_nickname(), _server_name}));
+		client.send(buildReply(client, RPL_CREATED, {client.get_nickname()}));
+		client.send(buildReply(client, RPL_MYINFO, {client.get_nickname(), _server_name}));
+		client.send(buildReply(client, RPL_ISUPPORT, {client.get_nickname()}));
 		client.set_authenticated();
 	}
 	return 0;

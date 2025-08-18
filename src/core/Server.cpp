@@ -7,6 +7,10 @@ std::map<ReplyCode, std::string> Server::_reply_messages = {
     // Registration
 	{RPL_NULL,                ""},                    // 0
     {RPL_WELCOME,              "Welcome to the Internet Relay Network"}, // 001
+    {RPL_YOURHOST,             "Your host is %s, running version 1.0"}, // 002
+    {RPL_CREATED,              "This server was created on August 2025"}, // 003
+    {RPL_MYINFO,               "%s 1.0 o o"}, // 004
+    {RPL_ISUPPORT,             "NICKLEN=15 CHANNELLEN=50 TOPICLEN=300 CHANTYPES=# PREFIX=(o)@ CHANMODES=i,k,l,ot"}, // 005
 
     // TOPIC
     {RPL_NOTOPIC,              "No topic is set"},                       // 331

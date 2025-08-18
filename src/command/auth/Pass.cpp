@@ -14,7 +14,7 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 		{
 			client.send(buildReply(client, ERR_ALREADYREGISTERED, {"PASS"}));
 		}
-		catch (const std::exception& e)
+		catch (const std::exception& e)  //TODO: should we kepp it??
 		{
 			std::cerr << "Error sending message: " << e.what() << std::endl;
 		}

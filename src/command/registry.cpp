@@ -14,6 +14,9 @@ const std::unordered_map<std::string, Server::CommandHandler> Server::handlers =
     {"PRIVMSG", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_privmsg(fd, msg);
     }},
+    {"NOTICE", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.handle_notice(fd, msg);
+    }},
 	{"PART", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_part(fd, msg);
     }},
@@ -29,9 +32,9 @@ const std::unordered_map<std::string, Server::CommandHandler> Server::handlers =
 	{"QUIT", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_quit(fd, msg);
     }},
-	// {"PING", [](Server& srv, int fd, const ParsedMessage& msg) {
-    //     return srv.handle_ping(fd, msg);
-    // }},
+	{"PING", [](Server& srv, int fd, const ParsedMessage& msg) {
+        return srv.handle_ping(fd, msg);
+    }},
 	{"MODE", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_mode(fd, msg);
     }},

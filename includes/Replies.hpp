@@ -5,6 +5,10 @@ enum ReplyCode {
     // Registration
 	RPL_NULL               = 0, // Special code for no reply
     RPL_WELCOME            = 1,
+    RPL_YOURHOST           = 2,
+    RPL_CREATED            = 3,
+    RPL_MYINFO             = 4,
+    RPL_ISUPPORT           = 5,
 
     // TOPIC
     RPL_NOTOPIC            = 331,

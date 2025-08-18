@@ -49,20 +49,29 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 
 	std::string old = client.get_nickname();
 	const bool is_change = old != nick;
-	_clients.at(fd).set_passed_nick(nick);
-
-	if (is_change)
+	
+	if (client.is_authenticated())
 	{
-		// RFC: ":<oldnick>!user@host NICK :<newnick>"
-		std::string line = buildAction(client, "NICK", {nick});
-		client.send(line);
-		for (const auto &ch : _channels)
+		if (is_change)
 		{
-			if (ch.second.has_member(fd))
+			// RFC: ":<oldnick>!user@host NICK :<newnick>"
+			std::string line = buildAction(client, "NICK", {nick});
+			client.send(line);
+			
+			// Broadcast to channels this user is in
+			for (const auto &ch : _channels)
 			{
-				ch.second.broadcast_message(line, fd);
+				if (ch.second.has_member(fd))
+				{
+					ch.second.broadcast_message(line, fd);
+				}
 			}
 		}
+	}
+	else 
+	{
+		// Not authenticated yet, just record the nickname
+		client.set_passed_nick(nick);
 	}
 	return (0);
 }

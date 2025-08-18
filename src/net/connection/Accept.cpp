@@ -27,7 +27,7 @@ void Server::handle_new_connection()
 		send_reply(client_fd, RPL_HELPSTART, { _clients.at(client_fd).get_nickname(), "*" }, "*** Available Commands ***");
 		send_reply(client_fd, RPL_HELPTXT, { _clients.at(client_fd).get_nickname(), "*" }, "PASS <password>");
 		send_reply(client_fd, RPL_HELPTXT, { _clients.at(client_fd).get_nickname(), "*" }, "NICK <nickname>");
-		send_reply(client_fd, RPL_HELPTXT, { _clients.at(client_fd).get_nickname(), "*" }, "USER <username> 0 * :realname\n");
+		send_reply(client_fd, RPL_HELPTXT, { _clients.at(client_fd).get_nickname(), "*" }, "USER <username> 0 * :realname");
 	}
 	catch (const std::exception& e)
 	{

@@ -60,6 +60,7 @@ class Server
 		void process_client_data(size_t& index, int client_fd);
 		bool is_duplicate_nickname(const std::string& nickname);
 		int find_fd_by_nickname(std::string const &nickname) const;
+		std::string rfc1459_lowercase(const std::string& str);
 
         // Helper methods for authentication
 		int handle_client_command(size_t &index, int client_fd, const ParsedMessage& parsedmsg);
@@ -68,6 +69,7 @@ class Server
         int parse_user(int fd, const ParsedMessage& msg);
 
 		int handle_privmsg(int fd, const ParsedMessage& msg);
+		int handle_notice(int fd, const ParsedMessage& msg);
 		int handle_part(int fd, const ParsedMessage& msg);
 		int handle_join(int fd, const ParsedMessage& msg);
 		// int handle_help(int fd, const ParsedMessage& msg);

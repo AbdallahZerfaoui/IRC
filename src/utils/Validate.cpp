@@ -13,15 +13,4 @@ bool Server::valid_inputs(int port, const std::string& password)
 	return true;
 }
 
-bool Server::is_duplicate_nickname(const std::string& nickname)
-{
-	// Check if the nickname is already taken by another client
-	for (const auto& client : _clients)
-	{
-		if (client.second.get_nickname() == nickname)
-		{
-			return true;
-		}
-	}
-	return false;
-}
+// Implementation of is_duplicate_nickname was moved to CaseMap.cpp with RFC1459 compliance
