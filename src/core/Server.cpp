@@ -252,7 +252,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 		int target_fd = find_fd_by_nickname(param);
 		if (target_fd == -1 || !channel.has_member(target_fd))
 		{
-			client.send(buildReply(client, ERR_USERNOTINCHANNEL, {param, "MODE"}));
+			client.send(buildReply(client, ERR_USERNOTINCHANNEL, {param, chan_name}));
 			return 0;
 		}
 		channel.remove_operator(target_fd);

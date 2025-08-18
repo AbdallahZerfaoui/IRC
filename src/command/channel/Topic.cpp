@@ -8,14 +8,14 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty())
 	{
-		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "TOPIC" }, "Not enough parameters");
+		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"TOPIC"}));
 		return 0;
 	}
 
 	std::string chan_name = msg.params[0];
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		send_reply(fd, ERR_BADCHANMASK, { nickname, "TOPIC" }, "Bad channel name");
+		client.send(buildReply(client, ERR_BADCHANMASK, {"TOPIC"}));
 		return 0;
 	}
 
@@ -23,32 +23,31 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, chan_name }, "No such channel");
+		client.send(buildReply(client, ERR_NOSUCHCHANNEL, {"TOPIC", chan_name}));
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.has_member(fd))
 	{
-		send_reply(fd, ERR_NOTONCHANNEL, { nickname, chan_name }, "You're not on that channel");
+		client.send(buildReply(client, ERR_NOTONCHANNEL, {"TOPIC", chan_name}));
 		return 0;
 	}
 
-	// just return the topic if no new topic is provided
 	if (msg.params.size() == 1)
 	{
 		std::string topic = channel.get_topic();
 		if (topic.empty())
-			send_reply(fd, RPL_NOTOPIC, { nickname, chan_name }, "No topic is set");
+			client.send(buildReply(client, RPL_NOTOPIC, {chan_name}));
 		else
-			send_reply(fd, RPL_TOPIC, { nickname, chan_name }, topic);
+			client.send(buildReply(client, RPL_TOPIC, {chan_name, topic}));
 		return 0;
 	}
 
     // If a new topic is provided, check if the user is allowed to change it
 	if (channel.is_topic_protected() && !channel.is_operator(fd))
 	{
-		send_reply(fd, ERR_CHANOPRIVSNEEDED, { nickname, chan_name }, "You're not channel operator");
+		client.send(buildReply(client, ERR_CHANOPRIVSNEEDED, {chan_name}));
 		return 0;
 	}
 
@@ -57,7 +56,7 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 		new_topic.erase(0, 1);
 	channel.set_topic(new_topic);
 
-	std::string topic_msg = ":" + nickname + "!user@host TOPIC " + chan_name + " :" + new_topic + "\r\n";
-	channel.broadcast_message(topic_msg, -1);
+	// Broadcast the new topic to all members of the channel
+	channel.broadcast_message(buildUserMode(client, chan_name, "TOPIC", new_topic), fd);
 	return 0;
 }
