@@ -33,7 +33,8 @@ NAME = ircserv
 
 # SRCS = Server.cpp Socket.cpp Client.cpp Channel.cpp ParsedMessage.cpp main.cpp
 # SRCS := $(addprefix $(SRCS_DIR)/, $(SRCS))
-SRCS := $(shell find $(SRCS_DIR) -type f -name '*.cpp') #TODO: check if we are allowed to use find
+SRCS := main.cpp Server.cpp Socket.cpp Client.cpp Channel.cpp ParsedMessage.cpp
+# SRCS := $(shell find $(SRCS_DIR) -type f -name '*.cpp') #TODO: check if we are allowed to use find
 
 
 # Object files (derived from SRCS)
