@@ -8,7 +8,7 @@ int Server::handle_kick(int fd, const ParsedMessage& msg)
 
 	if (msg.params.size() < 2)
 	{
-		send_reply(fd, ERR_NEEDMOREPARAMS, { nickname, "KICK" }, "Not enough parameters");
+		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"KICK"}));
 		return 0;
 	}
 
@@ -18,7 +18,7 @@ int Server::handle_kick(int fd, const ParsedMessage& msg)
 
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		send_reply(fd, ERR_BADCHANMASK, { nickname, "KICK" }, "Bad channel name");
+		client.send(buildReply(client, ERR_BADCHANMASK, {"KICK"}));
 		return 0;
 	}
 
@@ -26,30 +26,26 @@ int Server::handle_kick(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		send_reply(fd, ERR_NOSUCHCHANNEL, { nickname, chan_name }, "No such channel");
+		client.send(buildReply(client, ERR_NOSUCHCHANNEL, {chan_name}));
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.is_operator(fd))
 	{
-		send_reply(fd, ERR_CHANOPRIVSNEEDED, { nickname, chan_name }, "You're not channel operator");
+		client.send(buildReply(client, ERR_CHANOPRIVSNEEDED, {chan_name}));
 		return 0;
 	}
 
 	int target_fd = find_fd_by_nickname(target_nick);
 	if (target_fd == -1 || !channel.has_member(target_fd))
 	{
-		send_reply(fd, ERR_USERNOTINCHANNEL, { nickname, target_nick }, "Is not on that channel");
+		client.send(buildReply(client, ERR_USERNOTINCHANNEL, {target_nick, chan_name}));
 		return 0;
 	}
 
 	channel.remove_client(target_fd);
-
-	std::string kick_msg = ":" + nickname + "!user@host KICK " + chan_name + " " + target_nick + " :" + reason + "\r\n";
-	channel.broadcast_message(kick_msg, -1);
-
-	_clients.at(target_fd).send(kick_msg);
+	channel.broadcast_message(buildAction(client, "KICK", {chan_name, target_nick, reason}), fd);
 
 	// delete the channel if it has no members left 
 	if (channel.get_members().empty())

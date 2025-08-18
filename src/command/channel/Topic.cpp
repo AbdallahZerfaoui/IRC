@@ -57,6 +57,6 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 	channel.set_topic(new_topic);
 
 	// Broadcast the new topic to all members of the channel
-	channel.broadcast_message(buildUserMode(client, chan_name, "TOPIC", new_topic), fd);
+	channel.broadcast_message(buildAction(client, "TOPIC", {chan_name, new_topic}), fd);
 	return 0;
 }
