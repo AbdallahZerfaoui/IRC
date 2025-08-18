@@ -14,9 +14,6 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
 
 	std::vector<std::string> targets = split(msg.params[0], ',');
     std::string text = msg.params[1];
-    if (!text.empty() && text[0] == ':') {
-        text.erase(0, 1);
-	}
 
 	for (size_t i = 0; i < targets.size(); ++i)
     {
