@@ -40,7 +40,7 @@ SRCS := src/main.cpp \
 		src/core/Dispatch.cpp src/core/ParsedMessage.cpp src/core/Server.cpp \
 		src/command/auth/Nick.cpp src/command/auth/Pass.cpp src/command/auth/User.cpp \
 		src/command/channel/Join.cpp src/command/channel/Part.cpp src/command/channel/Topic.cpp src/command/channel/Kick.cpp src/command/channel/Invite.cpp \
-		src/command/messaging/Privmsg.cpp \
+		src/command/messaging/Privmsg.cpp src/command/messaging/Ping.cpp \
 		src/command/utility/Quit.cpp \
 		src/command/registry.cpp
 # SRCS := $(shell find $(SRCS_DIR) -type f -name '*.cpp') #TODO: check if we are allowed to use find
