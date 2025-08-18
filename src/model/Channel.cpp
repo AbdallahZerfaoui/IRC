@@ -6,7 +6,7 @@
 /*   By: tkeil <tkeil@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/24 17:50:46 by tkeil             #+#    #+#             */
-/*   Updated: 2025/08/18 12:41:53 by tkeil            ###   ########.fr       */
+/*   Updated: 2025/08/18 15:35:42 by tkeil            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,6 +88,15 @@ void Channel::add_invited_client(int client_fd)
     {
         std::cerr << "Client FD " << client_fd << " is already invited to the channel " << _name << std::endl;
     }
+}
+
+void Channel::remove_invited_client(int client_fd)
+{
+	if (_invited_clients.find(client_fd) != _invited_clients.end())
+	{
+		if (!_invited_clients.erase(client_fd))
+			return;
+	}
 }
 
 std::set<int> Channel::get_members() const

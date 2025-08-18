@@ -20,6 +20,7 @@ void Server::process_client_data(size_t &index, int client_fd)
 		return;
 	}
 
+	// Loop as long as there are complete lines in the output buffer and process them
 	for (;;)
 	{
 		std::string line = _clients.at(client_fd).extract_output_line();

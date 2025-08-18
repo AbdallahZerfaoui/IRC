@@ -69,7 +69,7 @@ class Server
         int parse_user(int fd, const ParsedMessage& msg);
 
 		int handle_privmsg(int fd, const ParsedMessage& msg);
-		int handle_notice(int fd, const ParsedMessage& msg);
+		// int handle_notice(int fd, const ParsedMessage& msg);
 		int handle_part(int fd, const ParsedMessage& msg);
 		int handle_join(int fd, const ParsedMessage& msg);
 		// int handle_help(int fd, const ParsedMessage& msg);

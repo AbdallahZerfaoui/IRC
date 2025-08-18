@@ -407,11 +407,6 @@ void Server::run()
 		for (size_t i = 1; i < _pollfds.size(); ++i)
 		{
 			int fd = _pollfds[i].fd;
-			Client& c = _clients.at(fd);
-			if (c.get_wants_pollout())
-				_pollfds[i].events |= POLLOUT;
-			else
-				_pollfds[i].events &= ~POLLOUT;
 
 			if (_pollfds[i].revents & POLLHUP)
 			{
@@ -425,14 +420,6 @@ void Server::run()
 			{
 				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Data ready to read." << std::endl;
 				process_client_data(i, fd);
-				--num_events;
-			}
-			if (_pollfds[i].revents & POLLOUT) {
-				Client& c = _clients.at(fd);
-				if (c.try_flush()) {
-					// If the output buffer is empty, disable POLLOUT
-					enable_pollout(fd, false);
-				}
 				--num_events;
 			}
 			if (_pollfds[i].revents & (POLLERR | POLLNVAL))

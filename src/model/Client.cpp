@@ -104,7 +104,7 @@ void Client::queue_send(const std::string &msg)
 	outbuf += msg;
 }
 
-bool Client::try_flush()
+void Client::try_flush()
 {
 	while (!outbuf.empty())
 	{
@@ -113,23 +113,12 @@ bool Client::try_flush()
 		{
 			outbuf.erase(0, static_cast<size_t>(n));
 		}
-		else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
-		{
-			want_pollout = true;
-			return false;
-		}
-		else
-		{
-			std::cerr << "send() failed for client FD " << _socket->get_fd()
-					  << ": " << std::strerror(errno) << std::endl;
-			throw std::runtime_error("send() failed");
-		}
 	}
-	want_pollout = false;
-	return true;
 }
 
 // Send data to the client
+// The send function appends the msg to the outbuf and then tries to flush it to the socket.
+// 
 void Client::send(std::string msg)
 {
 	queue_send(msg);
@@ -153,9 +142,4 @@ std::string Client::extract_output_line()
 	if (!line.empty() && line.back() == '\r')
 		line.pop_back();
 	return (line);
-}
-
-bool Client::get_wants_pollout() const
-{
-	return want_pollout;
 }

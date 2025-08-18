@@ -64,6 +64,7 @@ class Channel
         int get_limit() const;
 
         void add_invited_client(int client_fd);
+		void remove_invited_client(int client_fd);
         bool is_invited(int client_fd) const;
 		std::string topic() const;
 };

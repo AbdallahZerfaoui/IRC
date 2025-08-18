@@ -14,9 +14,9 @@ const std::unordered_map<std::string, Server::CommandHandler> Server::handlers =
     {"PRIVMSG", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_privmsg(fd, msg);
     }},
-    {"NOTICE", [](Server& srv, int fd, const ParsedMessage& msg) {
-        return srv.handle_notice(fd, msg);
-    }},
+    // {"NOTICE", [](Server& srv, int fd, const ParsedMessage& msg) {
+    //     return srv.handle_notice(fd, msg);
+    // }},
 	{"PART", [](Server& srv, int fd, const ParsedMessage& msg) {
         return srv.handle_part(fd, msg);
     }},

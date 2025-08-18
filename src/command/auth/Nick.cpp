@@ -19,7 +19,6 @@ bool is_valid_nick(const std::string &nick)
 int Server::parse_nick(int fd, const ParsedMessage &msg)
 {
 	Client &client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
 
 	if (msg.params.empty() || msg.params[0].empty())
 	{
@@ -49,6 +48,7 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 
 	std::string old = client.get_nickname();
 	const bool is_change = old != nick;
+	client.set_passed_nick(nick);
 	
 	if (client.is_authenticated())
 	{
@@ -67,11 +67,6 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 				}
 			}
 		}
-	}
-	else 
-	{
-		// Not authenticated yet, just record the nickname
-		client.set_passed_nick(nick);
 	}
 	return (0);
 }

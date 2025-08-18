@@ -4,7 +4,6 @@
 int Server::parse_user(int fd, const ParsedMessage &msg)
 {
 	Client &client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
 
 	if (client.get_passed_user())
 	{

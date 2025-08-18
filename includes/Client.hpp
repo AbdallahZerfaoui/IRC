@@ -22,7 +22,6 @@ private:
     std::unique_ptr<Socket> _socket;
 	std::string outbuf = ""; // When the server sends data to the client, it is stored here
     std::string recv_buffer = ""; // When the client sends data to the server, it is stored here
-	bool want_pollout = false;
 	
 	// Authentication data
 	std::string _nickname = ""; // from NICK
@@ -74,8 +73,7 @@ public:
 	void write_output_buffer(std::string const &data); // Append data to the output_buffer to send to the server
 	std::string extract_output_line();
 	void queue_send(const std::string& msg);
-	bool try_flush();
-	bool get_wants_pollout() const;
+	void try_flush();
 	std::string const get_hostname() const;
 };
 
