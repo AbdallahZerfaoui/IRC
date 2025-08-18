@@ -64,10 +64,7 @@ int Server::handle_join(int fd, const ParsedMessage& msg)
 		ch.add_client(fd);
 
 		if (ch.is_invited(fd))
-		{
 			ch.remove_invited_client(fd);
-			client.send(buildReply(client, RPL_INVITING, {nickname, "#" + name}));
-		}		
 		
 		// Send the JOIN message to the client and broadcast it to other members
 		ch.broadcast_message(buildAction(client, "JOIN", {"#" + name}), -1);

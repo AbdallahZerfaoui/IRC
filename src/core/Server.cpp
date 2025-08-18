@@ -227,7 +227,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 		break;
 	case 'k':
 	{
-		if (param.empty())
+		if (state && param.empty())
 		{
 			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 			return 0;
@@ -259,7 +259,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	}
 	case 'l':
 	{
-		if (param.empty() || !std::all_of(param.begin(), param.end(), ::isdigit))
+		if ((state && param.empty()) || !std::all_of(param.begin(), param.end(), ::isdigit))
 		{
 			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 			return 0;

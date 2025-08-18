@@ -4,7 +4,6 @@
 int Server::handle_part(int fd, const ParsedMessage& msg)
 {
 	Client &client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
 
     if (msg.params.empty() || msg.params.size() > 2)
     {
@@ -39,7 +38,9 @@ int Server::handle_part(int fd, const ParsedMessage& msg)
 			client.send(buildReply(client, ERR_NOTONCHANNEL, {"PART", "#" + chans[i]}));
 			continue ;
 		}
-		_channels.at(chans[i]).broadcast_message(buildAction(client, "PART", { "#" + chans[i], reason }), fd);
+		std::string action = buildAction(client, "PART", { "#" + chans[i], reason });
+		_channels.at(chans[i]).broadcast_message(action, fd);
+		client.send(action);
 
 		if (it->second.get_members().empty())
 			_channels.erase(it);

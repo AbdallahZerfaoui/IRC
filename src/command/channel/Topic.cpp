@@ -4,7 +4,6 @@
 int Server::handle_topic(int fd, const ParsedMessage& msg)
 {
 	Client &client = _clients.at(fd);
-	std::string nickname = client.get_nickname();
 
 	if (msg.params.empty())
 	{
