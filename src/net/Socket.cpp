@@ -55,15 +55,15 @@ int Socket::get_fd() const
 
 void Socket::set_nonblocking()
 {
-	int flags = fcntl(_fd, F_GETFL, 0); //TODO: is it the right way to use fcntl?
+	int flags = fcntl(_fd, F_SETFL, O_NONBLOCK); //TODO: is it the right way to use fcntl?
 	if (flags == -1)
 	{
 		throw std::runtime_error(std::string("fcntl F_GETFL failed: ") + std::strerror(errno));
 	}
-	if (fcntl(_fd, F_SETFL, flags | O_NONBLOCK) == -1)
-	{
-		throw std::runtime_error(std::string("fcntl F_SETFL O_NONBLOCK failed: ") + std::strerror(errno));
-	}
+	// if (fcntl(_fd, F_SETFL, O_NONBLOCK) == -1)
+	// {
+	// 	throw std::runtime_error(std::string("fcntl F_SETFL O_NONBLOCK failed: ") + std::strerror(errno));
+	// }
 	std::cout << "Socket with FD " << _fd << " set to non-blocking." << std::endl;
 }
 

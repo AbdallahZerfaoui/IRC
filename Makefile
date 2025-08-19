@@ -84,7 +84,7 @@ start_server: re
 
 val:
 	@echo "${GREEN}Running Valgrind...${RESET}"
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes --trace-children=yes -s --log-file=valgrind.log --verbose ./$(NAME) 6669 a
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes --trace-children=yes -s --log-file=valgrind.log --verbose ./$(NAME) 6667 a
 
 art:
 	@echo "${GREEN}IIIIIIIIIIRRRRRRRRRRRRRRRRR           CCCCCCCCCCCCC             SSSSSSSSSSSSSSS EEEEEEEEEEEEEEEEEEEEEERRRRRRRRRRRRRRRRR   VVVVVVVV           VVVVVVVVEEEEEEEEEEEEEEEEEEEEEERRRRRRRRRRRRRRRRR   "
