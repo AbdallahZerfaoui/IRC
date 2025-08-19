@@ -15,6 +15,7 @@ class Server;
 class Channel 
 {
 	private:
+		Server& _server; // Reference to the server, to access clients and send messages
 		std::string _name;
 		std::string _key; // Channel key for private channels, can be empty for public channels
 		std::string _topic; // Channel topic, can be empty
@@ -25,11 +26,10 @@ class Channel
         std::set<int> _invited_clients;
 		std::set<int> _members; // Set of unique client file descriptors, that are part of this channel. With this we can access a client directly through the reference to the clients map in Server
 		std::set<int> _operators; // Set of operators that can perform special actions like kicking clients, inviting clients, change the channel topic, change the channel mode
-		std::unordered_map<int, Client>& _clients_ref; // Reference to the clients map in Server
         int _limit; // Limit of users in the channel, -1 means no limit
 
 	public:
-		Channel(const std::string& name, std::unordered_map<int, Client>& clients);
+		Channel(Server &server, const std::string& name);
 		Channel(const Channel&) = delete;
 		Channel& operator=(const Channel&) = delete;
 

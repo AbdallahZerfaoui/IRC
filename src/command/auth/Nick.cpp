@@ -22,7 +22,7 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 
 	if (msg.params.empty() || msg.params[0].empty())
 	{
-		client.send(buildReply(client, ERR_NONICKNAMEGIVEN, { "NICK" }));
+		queue_send_to(fd, buildReply(client, ERR_NONICKNAMEGIVEN, {"NICK"}));
 		return 0;
 	}
 
@@ -36,13 +36,13 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 
 	if (!valid_nick)
 	{
-		client.send(buildReply(client, ERR_ERRONEUSNICKNAME, { "NICK" }));
+		queue_send_to(fd, buildReply(client, ERR_ERRONEUSNICKNAME, {"NICK"}));
 		return 0;
 	}
 
 	if (is_duplicate_nickname(nick))
 	{
-		client.send(buildReply(client, ERR_NICKNAMEINUSE, { "NICK" }));
+		queue_send_to(fd, buildReply(client, ERR_NICKNAMEINUSE, {"NICK"}));
 		return 0;
 	}
 
@@ -56,7 +56,7 @@ int Server::parse_nick(int fd, const ParsedMessage &msg)
 		{
 			// RFC: ":<oldnick>!user@host NICK :<newnick>"
 			std::string line = buildAction(client, "NICK", {nick});
-			client.send(line);
+			queue_send_to(fd, line);
 			
 			// Broadcast to channels this user is in
 			for (const auto &ch : _channels)

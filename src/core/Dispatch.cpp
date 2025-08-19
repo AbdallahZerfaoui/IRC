@@ -21,22 +21,23 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 
 	if (!preauth_ok && !client.get_passed_pass())
 	{
-		client.send(buildReply(client, ERR_NOTREGISTERED, {parsedmsg.command}));
+		queue_send_to(client_fd, buildReply(client, ERR_NOTREGISTERED, {parsedmsg.command}));
 		return 0;
 	}
 
 	if (!client.is_authenticated() && !preauth_ok)
 	{
-		client.send(buildReply(client, ERR_NOTREGISTERED, {parsedmsg.command}));
+		queue_send_to(client_fd, buildReply(client, ERR_NOTREGISTERED, {parsedmsg.command}));
 		return 0;
 	}
 
 	auto it = handlers.find(parsedmsg.command);
 	if (it == handlers.end())
 	{
-		client.send(buildReply(client, ERR_UNKNOWNCOMMAND, {nickname, parsedmsg.command}));
+		queue_send_to(client_fd, buildReply(client, ERR_UNKNOWNCOMMAND, {nickname, parsedmsg.command}));
 		return 0;
 	}
+	// Here the command handler is called (PASS, NICK, USER, PRIVMSG, JOIN, etc.)
 	if (it->second(*this, client_fd, parsedmsg) == -1)
 	{
 		handle_disconnection(index);
@@ -49,11 +50,11 @@ int Server::handle_client_command(size_t &index, int client_fd, const ParsedMess
 		client.get_passed_user())
 	{
 		// Send welcome sequence (001-005)
-		client.send(buildReply(client, RPL_WELCOME, {client.get_nickname()}));
-		client.send(buildReply(client, RPL_YOURHOST, {client.get_nickname(), _server_name}));
-		client.send(buildReply(client, RPL_CREATED, {client.get_nickname()}));
-		client.send(buildReply(client, RPL_MYINFO, {client.get_nickname(), _server_name}));
-		client.send(buildReply(client, RPL_ISUPPORT, {client.get_nickname()}));
+		queue_send_to(client_fd, buildReply(client, RPL_WELCOME, {client.get_nickname()}));
+		queue_send_to(client_fd, buildReply(client, RPL_YOURHOST, {client.get_nickname(), _server_name}));
+		queue_send_to(client_fd, buildReply(client, RPL_CREATED, {client.get_nickname()}));
+		queue_send_to(client_fd, buildReply(client, RPL_MYINFO, {client.get_nickname(), _server_name}));
+		queue_send_to(client_fd, buildReply(client, RPL_ISUPPORT, {client.get_nickname()}));
 		client.set_authenticated();
 	}
 	return 0;

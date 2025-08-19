@@ -48,7 +48,6 @@ public:
     ~Client() = default;
 
     int get_fd() const;
-    void close();
 	bool get_passed_pass() const;
 	bool get_passed_nick() const;
 	std::string const get_old_nickname() const;
@@ -66,15 +65,11 @@ public:
 	bool is_authenticated() const;
 	void set_authenticated();
 
-	// std::string const &get_read_buffer() const;
-	// std::string const &get_write_buffer() const;
-
-	void send(std::string msg); // Append data to the input_buffer to send to the client
 	void write_output_buffer(std::string const &data); // Append data to the output_buffer to send to the server
 	std::string extract_output_line();
 	void queue_send(const std::string& msg);
-	void try_flush();
 	std::string const get_hostname() const;
+	std::string &get_output_buffer();
 };
 
 #endif

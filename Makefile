@@ -34,7 +34,7 @@ NAME = ircserv
 # SRCS = Server.cpp Socket.cpp Client.cpp Channel.cpp ParsedMessage.cpp main.cpp
 # SRCS := $(addprefix $(SRCS_DIR)/, $(SRCS))
 SRCS := src/main.cpp \
-		src/utils/CaseMap.cpp src/utils/Reply.cpp src/utils/Split.cpp src/utils/Validate.cpp \
+		src/utils/CaseMap.cpp src/utils/Split.cpp src/utils/Validate.cpp \
 		src/net/Socket.cpp src/net/connection/Accept.cpp src/net/connection/Data.cpp src/net/connection/Disconnect.cpp \
 		src/model/Channel.cpp src/model/Client.cpp \
 		src/core/Dispatch.cpp src/core/ParsedMessage.cpp src/core/Server.cpp \

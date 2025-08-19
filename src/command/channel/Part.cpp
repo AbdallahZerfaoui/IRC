@@ -7,7 +7,7 @@ int Server::handle_part(int fd, const ParsedMessage& msg)
 
     if (msg.params.empty() || msg.params.size() > 2)
     {
-		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"PART"}));
+		queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"PART"}));
         return 0;
     }
 
@@ -21,7 +21,7 @@ int Server::handle_part(int fd, const ParsedMessage& msg)
 	{
 		if (chans[i].empty() || chans[i][0] != '#')
         {
-			client.send(buildReply(client, ERR_BADCHANMASK, {"PART"}));
+			queue_send_to(fd, buildReply(client, ERR_BADCHANMASK, {"PART"}));
             continue;
         }
 		chans[i].erase(0, 1);
@@ -29,18 +29,18 @@ int Server::handle_part(int fd, const ParsedMessage& msg)
 		auto it = _channels.find(chans[i]);
 		if (it == _channels.end())
 		{
-			client.send(buildReply(client, ERR_NOSUCHCHANNEL, {"PART", "#" + chans[i]}));
+			queue_send_to(fd, buildReply(client, ERR_NOSUCHCHANNEL, {"PART", "#" + chans[i]}));
 			continue ;
 		}
 
 		if (!it->second.remove_client(fd))
 		{
-			client.send(buildReply(client, ERR_NOTONCHANNEL, {"PART", "#" + chans[i]}));
+			queue_send_to(fd, buildReply(client, ERR_NOTONCHANNEL, {"PART", "#" + chans[i]}));
 			continue ;
 		}
 		std::string action = buildAction(client, "PART", { "#" + chans[i], reason });
 		_channels.at(chans[i]).broadcast_message(action, fd);
-		client.send(action);
+		queue_send_to(fd, action);
 
 		if (it->second.get_members().empty())
 			_channels.erase(it);

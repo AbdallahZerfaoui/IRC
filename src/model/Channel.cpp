@@ -6,18 +6,18 @@
 /*   By: tkeil <tkeil@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/24 17:50:46 by tkeil             #+#    #+#             */
-/*   Updated: 2025/08/18 19:00:13 by tkeil            ###   ########.fr       */
+/*   Updated: 2025/08/19 17:47:53 by tkeil            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "Channel.hpp"
 
-Channel::Channel(const std::string &name, std::unordered_map<int, Client> &clients) : _name(name), _key(""), _topic(""), _is_private(false), _invite_only(false), _invited_clients(), _members(), _operators(), _clients_ref(clients), _limit(-1)
+Channel::Channel(Server &server, const std::string &name) : _server(server), _name(name), _key(""), _topic(""), _is_private(false), _invite_only(false), _invited_clients(), _members(), _operators(), _limit(-1)
 {
 }
 
-Channel::Channel(Channel &&other) : _name(std::move(other._name)), _key(std::move(other._key)), _topic(std::move(other._topic)), _is_private(other._is_private), _invite_only(other._invite_only), _invited_clients(std::move(other._invited_clients)), _members(std::move(other._members)), _operators(std::move(other._operators)), _clients_ref(other._clients_ref), _limit(other._limit) {}
+Channel::Channel(Channel &&other) : _server(other._server), _name(std::move(other._name)), _key(std::move(other._key)), _topic(std::move(other._topic)), _is_private(other._is_private), _invite_only(other._invite_only), _invited_clients(std::move(other._invited_clients)), _members(std::move(other._members)), _operators(std::move(other._operators)), _limit(other._limit) {}
 
 void Channel::add_client(int client_fd)
 {
@@ -113,7 +113,7 @@ void Channel::broadcast_message(const std::string &message, int sender_fd) const
             try
             {
                 std::string msg = message;
-                _clients_ref.at(member_fd).send(msg);
+				_server.queue_send_to(member_fd, msg);
             }
             catch (const std::exception &e)
             {

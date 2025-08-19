@@ -50,14 +50,11 @@ class Server
 		// Helper methods for socket setup (optional, can be in constructor)
 		bool valid_inputs(int port, const std::string& password);
 		sockaddr_in create_sockaddr_in(int port);
-		pollfd create_pollfd();
 		void handle_new_connection();
 		void handle_disconnection(size_t& index);
-		void setup_listening_socket();
-		void bind_listening_socket();
-		void listen_on_socket();
 		// void handle_authentication(size_t &index, int client_fd, const std::vector<std::string>& lines);
 		void process_client_data(size_t& index, int client_fd);
+		void process_client_output(size_t &index, int client_fd);
 		bool is_duplicate_nickname(const std::string& nickname);
 		int find_fd_by_nickname(std::string const &nickname) const;
 		std::string rfc1459_lowercase(const std::string& str);
@@ -96,11 +93,14 @@ class Server
 		static void setup_signal_handlers();
 
 		// void send_reply(int fd, int code, const std::vector<std::string>& params, const std::string& msg);
-		void enable_pollout(int fd, bool enable);
 		std::string buildReply(const Client &client, ReplyCode code, const std::vector<std::string> &params);
 		std::string buildAction(Client &client, const std::string &command, const std::vector<std::string> &params);
 		std::string buildServerMode(const std::string &channel, const std::string &flag, const std::string &targetNick);
 		std::string buildUserMode(const Client &client, const std::string &channel, const std::string &flag, const std::string &targetNick);
+		void queue_send_to(int fd, const std::string& msg);
+		void activate_pollout(int fd);
+		void deactivate_pollout(int fd);
+		int get_index_by_fd(int fd) const;
 
 		// void handle_new_connection();
 		// void handle_client_data(int client_fd);

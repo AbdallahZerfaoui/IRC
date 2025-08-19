@@ -7,14 +7,14 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty())
 	{
-		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"TOPIC"}));
+		queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"TOPIC"}));
 		return 0;
 	}
 
 	std::string chan_name = msg.params[0];
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		client.send(buildReply(client, ERR_BADCHANMASK, {"TOPIC"}));
+		queue_send_to(fd, buildReply(client, ERR_BADCHANMASK, {"TOPIC"}));
 		return 0;
 	}
 
@@ -22,14 +22,14 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		client.send(buildReply(client, ERR_NOSUCHCHANNEL, {"TOPIC", chan_name}));
+		queue_send_to(fd, buildReply(client, ERR_NOSUCHCHANNEL, {"TOPIC", chan_name}));
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.has_member(fd))
 	{
-		client.send(buildReply(client, ERR_NOTONCHANNEL, {"TOPIC", chan_name}));
+		queue_send_to(fd, buildReply(client, ERR_NOTONCHANNEL, {"TOPIC", chan_name}));
 		return 0;
 	}
 
@@ -37,16 +37,16 @@ int Server::handle_topic(int fd, const ParsedMessage& msg)
 	{
 		std::string topic = channel.get_topic();
 		if (topic.empty())
-			client.send(buildReply(client, RPL_NOTOPIC, {chan_name}));
+			queue_send_to(fd, buildReply(client, RPL_NOTOPIC, {chan_name}));
 		else
-			client.send(buildReply(client, RPL_TOPIC, {chan_name, topic}));
+			queue_send_to(fd, buildReply(client, RPL_TOPIC, {chan_name, topic}));
 		return 0;
 	}
 
     // If a new topic is provided, check if the user is allowed to change it
 	if (channel.is_topic_protected() && !channel.is_operator(fd))
 	{
-		client.send(buildReply(client, ERR_CHANOPRIVSNEEDED, {chan_name}));
+		queue_send_to(fd, buildReply(client, ERR_CHANOPRIVSNEEDED, {chan_name}));
 		return 0;
 	}
 

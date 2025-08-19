@@ -7,7 +7,7 @@ int Server::handle_ping(int fd, const ParsedMessage& msg)
 
 	if (msg.params.empty())
 	{
-		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"PING"}));
+		queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"PING"}));
 		return 0;
 	}
 
@@ -16,6 +16,6 @@ int Server::handle_ping(int fd, const ParsedMessage& msg)
 	// send a pong back to the client
 
 	std::string response = "PONG " + _server_name + " :" + target + "\r\n";
-	client.send(response);
+	queue_send_to(fd, response);
 	return (1);
 }

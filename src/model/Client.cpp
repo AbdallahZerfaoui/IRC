@@ -13,7 +13,6 @@ Client &Client::operator=(Client &&other)
 	return *this;
 }
 
-// CHANGED (tobias)
 Client::Client(std::unique_ptr<Socket> socket) : _socket(std::move(socket))
 {
 	if (_socket)
@@ -104,28 +103,6 @@ void Client::queue_send(const std::string &msg)
 	outbuf += msg;
 }
 
-void Client::try_flush()
-{
-	while (!outbuf.empty())
-	{
-		ssize_t n = ::send(_socket->get_fd(), outbuf.data(), outbuf.size(), 0);
-		if (n > 0)
-		{
-			outbuf.erase(0, static_cast<size_t>(n));
-		}
-	}
-}
-
-// Send data to the client
-// The send function appends the msg to the outbuf and then tries to flush it to the socket.
-// 
-void Client::send(std::string msg)
-{
-	queue_send(msg);
-	try_flush();
-}
-
-// Write data to the output buffer used for sending data to the server
 void Client::write_output_buffer(std::string const &data)
 {
 	recv_buffer += data;
@@ -142,4 +119,9 @@ std::string Client::extract_output_line()
 	if (!line.empty() && line.back() == '\r')
 		line.pop_back();
 	return (line);
+}
+
+std::string &Client::get_output_buffer()
+{
+	return outbuf;
 }

@@ -7,13 +7,13 @@ int Server::parse_user(int fd, const ParsedMessage &msg)
 
 	if (client.get_passed_user())
 	{
-		client.send(buildReply(client, ERR_ALREADYREGISTERED, {"USER"}));
+		queue_send_to(fd, buildReply(client, ERR_ALREADYREGISTERED, {"USER"}));
 		return 0;
 	}
 
 	if (msg.params.size() < 4)
 	{
-		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"USER"}));
+		queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"USER"}));
 		return 0;
 	}
 

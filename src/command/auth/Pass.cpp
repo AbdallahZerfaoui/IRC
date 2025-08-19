@@ -9,19 +9,19 @@ int Server::parse_pass(int fd, const ParsedMessage& msg)
 
 	if (client.get_passed_pass())
 	{
-		client.send(buildReply(client, ERR_ALREADYREGISTERED, {"PASS"}));
+		queue_send_to(fd, buildReply(client, ERR_ALREADYREGISTERED, {"PASS"}));
 		return 0;
 	}
 
 	if (msg.params.size() != 1 || msg.params[0].empty())
 	{
-		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"PASS"}));
+		queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"PASS"}));
 		return 0;
 	}
 
 	if (msg.params[0] != this->_password)
 	{
-		client.send(buildReply(client, ERR_PASSWDMISMATCH, {"PASS"}));
+		queue_send_to(fd, buildReply(client, ERR_PASSWDMISMATCH, {"PASS"}));
 		return 0;
 	}
 	client.set_passed_pass(msg.params[0]);

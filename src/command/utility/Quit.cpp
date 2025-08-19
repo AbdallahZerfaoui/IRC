@@ -11,7 +11,7 @@ int Server::handle_quit(int fd, const ParsedMessage& msg)
 		// First send the part message to the channel and to the client
 		std::string action = buildAction(_clients.at(fd), "PART", { "#" + channel.second.get_name(), "Client disconnected" });
 		_channels.at(channel.second.get_name()).broadcast_message(action, fd);
-		_clients.at(fd).send(action);
+		queue_send_to(fd, action);
 
 		// Then remove the client from the channel
 		channel.second.remove_client(fd);

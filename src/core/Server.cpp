@@ -60,7 +60,7 @@ sockaddr_in Server::create_sockaddr_in(int port)
 Server::Server(int port, const std::string &password)
 	: _server_name("ft_irc"),
 	  _listening_socket(), // Initialize the listening socket (calls Socket::Socket())
-	  _hostname(""),
+	  _hostname(""), 
 	  _port(port),
 	  _password(password)
 {
@@ -175,7 +175,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	// At least 2 params: channel + mode
 	if (msg.params.size() < 2)
 	{
-		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
+		queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 		return 0;
 	}
 
@@ -185,7 +185,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 
 	if (chan_name.empty() || chan_name[0] != '#')
 	{
-		client.send(buildReply(client, ERR_BADCHANMASK, {"MODE"}));
+		queue_send_to(fd, buildReply(client, ERR_BADCHANMASK, {"MODE"}));
 		return 0;
 	}
 
@@ -193,26 +193,26 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	auto it = _channels.find(chan);
 	if (it == _channels.end())
 	{
-		client.send(buildReply(client, ERR_NOSUCHCHANNEL, {chan_name}));
+		queue_send_to(fd, buildReply(client, ERR_NOSUCHCHANNEL, {chan_name}));
 		return 0;
 	}
 	Channel &channel = it->second;
 
 	if (!channel.has_member(fd))
 	{
-		client.send(buildReply(client, ERR_NOTONCHANNEL, {chan_name}));
+		queue_send_to(fd, buildReply(client, ERR_NOTONCHANNEL, {chan_name}));
 		return 0;
 	}
 
 	if (!channel.is_operator(fd))
 	{
-		client.send(buildReply(client, ERR_CHANOPRIVSNEEDED, {chan_name}));
+		queue_send_to(fd, buildReply(client, ERR_CHANOPRIVSNEEDED, {chan_name}));
 		return 0;
 	}
 
 	if (mode.empty() || mode.size() != 2 || (mode[0] != '+' && mode[0] != '-'))
 	{
-		client.send(buildReply(client, ERR_UNKNOWNMODE, {mode}));
+		queue_send_to(fd, buildReply(client, ERR_UNKNOWNMODE, {mode}));
 		return 0;
 	}
 	
@@ -229,7 +229,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
 		if (state && param.empty())
 		{
-			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
+			queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 			return 0;
 		}
 		if (state)
@@ -242,13 +242,13 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
 		if (param.empty())
 		{
-			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
+			queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 			return 0;
 		}
 		int target_fd = find_fd_by_nickname(param);
 		if (target_fd == -1 || !channel.has_member(target_fd))
 		{
-			client.send(buildReply(client, ERR_USERNOTINCHANNEL, {param, chan_name}));
+			queue_send_to(fd, buildReply(client, ERR_USERNOTINCHANNEL, {param, chan_name}));
 			return 0;
 		}
 		if (state)
@@ -261,7 +261,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 	{
 		if ((state && param.empty()) || !std::all_of(param.begin(), param.end(), ::isdigit))
 		{
-			client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
+			queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
 			return 0;
 		}
 		if (state)
@@ -269,7 +269,7 @@ int Server::handle_mode(int fd, const ParsedMessage& msg)
 			int limit = std::stoi(param);
 			if (limit < 0)
 			{
-				client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"MODE"}));
+				queue_send_to(fd, buildReply(client, ERR_UMODEUNKNOWNFLAG, {"MODE"}));
 				return 0;
 			}
 			channel.set_limit(limit);
@@ -411,7 +411,6 @@ void Server::run()
 			if (_pollfds[i].revents & POLLHUP)
 			{
 				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Disconnection detected." << std::endl;
-				// handle disconnection
 				handle_disconnection(i);
 				--num_events;
 				continue;
@@ -420,13 +419,18 @@ void Server::run()
 			{
 				std::cout << "Event on client socket (FD " << _pollfds[i].fd << "): Data ready to read." << std::endl;
 				process_client_data(i, fd);
+				--num_events; 
+			}
+			if (_pollfds[i].revents & POLLOUT)
+			{
+				// If the client has data to send (POLLOUT event is set)
+				process_client_output(i, fd);
 				--num_events;
 			}
 			if (_pollfds[i].revents & (POLLERR | POLLNVAL))
 			{
 				// Check for errors on listening socket (rare but possible)
 				std::cerr << "Error event on listening socket (FD " << _listening_socket.get_fd() << ")." << std::endl;
-				// Depending on the error, you might want to exit or try to recover
 				handle_disconnection(i);
 				--num_events;
 			}

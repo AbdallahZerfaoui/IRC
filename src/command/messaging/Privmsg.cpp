@@ -8,7 +8,7 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
 	std::string nickname = client.get_nickname();
 	if (msg.params.size() < 2)
 	{
-		client.send(buildReply(client, ERR_NEEDMOREPARAMS, {"PRIVMSG"}));
+		queue_send_to(fd, buildReply(client, ERR_NEEDMOREPARAMS, {"PRIVMSG"}));
 		return 0;
 	}
 
@@ -23,14 +23,14 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
             auto it = _channels.find(chan);
             if (it == _channels.end())
             {
-				client.send(buildReply(client, ERR_NOSUCHCHANNEL, {nickname, targets[i]}));
+				queue_send_to(fd, buildReply(client, ERR_NOSUCHCHANNEL, {nickname, targets[i]}));
                 continue;
             }
 
             Channel& ch = it->second;
             if (!ch.has_member(fd))
             {
-				client.send(buildReply(client, ERR_CANNOTSENDTOCHAN, {nickname, targets[i]}));
+				queue_send_to(fd, buildReply(client, ERR_NOTONCHANNEL, {nickname, targets[i]}));
                 continue;
             }
 
@@ -41,11 +41,23 @@ int Server::handle_privmsg(int fd, const ParsedMessage& msg)
 		int fdtg = find_fd_by_nickname(targets[i]);
 		if (fdtg == -1)
 		{
-			client.send(buildReply(client, ERR_NOSUCHNICK, {targets[i]}));
+			queue_send_to(fd, buildReply(client, ERR_NOSUCHNICK, {targets[i]}));
 			continue ;
 		}
 
-		_clients.at(fdtg).send(buildAction(client, "PRIVMSG", {targets[i], text}));
+		if (fdtg == fd)
+		{
+			queue_send_to(fd, buildReply(client, ERR_CANNOTSENDTOCHAN, {targets[i]}));
+			continue;
+		}
+
+		if (!_clients.at(fdtg).is_authenticated())
+		{
+			queue_send_to(fd, buildReply(client, ERR_NOTREGISTERED, {targets[i]}));
+			continue;
+		}
+
+		queue_send_to(fdtg, buildAction(client, "PRIVMSG", {targets[i], text}));
 	}
 	return 0;
 }
