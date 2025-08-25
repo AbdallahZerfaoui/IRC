@@ -15,11 +15,11 @@ ParsedMessage::ParsedMessage(const std::string& line)
 	std::istringstream ss(line);
 
 	// Getting the prefix
-	if (!token.empty() && token[0] == ':')
-	{
-		ss >> token;
-		prefix = token.substr(1);
-	}
+	// if (!token.empty() && token[0] == ':')
+	// {
+	// 	ss >> token;
+	// 	prefix = token.substr(1);
+	// }
 
 	// Getting the command
 	ss >> command;

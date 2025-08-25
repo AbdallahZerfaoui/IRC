@@ -58,7 +58,7 @@ void Socket::set_nonblocking()
 	int flags = fcntl(_fd, F_SETFL, O_NONBLOCK); //TODO: is it the right way to use fcntl?
 	if (flags == -1)
 	{
-		throw std::runtime_error(std::string("fcntl F_GETFL failed: ") + std::strerror(errno));
+		throw std::runtime_error(std::string("fcntl F_SETFL failed: ") + std::strerror(errno));
 	}
 	// if (fcntl(_fd, F_SETFL, O_NONBLOCK) == -1)
 	// {
